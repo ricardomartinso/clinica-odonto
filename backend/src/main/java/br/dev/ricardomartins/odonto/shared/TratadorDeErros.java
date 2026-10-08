@@ -51,6 +51,16 @@ class TratadorDeErros extends ResponseEntityExceptionHandler {
         return problema(HttpStatus.UNPROCESSABLE_ENTITY, "Regra de negócio violada", ex.getMessage());
     }
 
+    @ExceptionHandler(VersaoDesatualizadaException.class)
+    ProblemDetail versaoDesatualizada(VersaoDesatualizadaException ex) {
+        return problema(HttpStatus.PRECONDITION_FAILED, "Versão desatualizada", ex.getMessage());
+    }
+
+    @ExceptionHandler(VersaoObrigatoriaException.class)
+    ProblemDetail versaoObrigatoria(VersaoObrigatoriaException ex) {
+        return problema(HttpStatus.PRECONDITION_REQUIRED, "Versão obrigatória", ex.getMessage());
+    }
+
     @ExceptionHandler(ObjectOptimisticLockingFailureException.class)
     ProblemDetail edicaoConcorrente(ObjectOptimisticLockingFailureException ex) {
         return problema(HttpStatus.CONFLICT, "Conflito",
