@@ -9,7 +9,9 @@
 - `timestamptz` ↔ `Instant` para momentos; `date` ↔ `LocalDate` para datas. Fuso da clínica:
   `America/Sao_Paulo`.
 - Colunas `criado_em/por` e `atualizado_em/por` em todas as tabelas (Spring Data Auditing).
-- `@Version` nos agregados editáveis; edição concorrente → `409 Conflict` (ProblemDetail).
+- `@Version` nos agregados editáveis, exposto via HTTP: leituras devolvem a versão como `ETag` e
+  alterações exigem `If-Match` (ausente → `428`, desatualizado → `412`). Corrida entre a conferência e o
+  flush ainda é barrada pelo `@Version` → `409`.
 - Nenhum dado clínico ou cadastral é apagado fisicamente: inativação ou anulação com motivo.
 - Hibernate Envers em `Anamnese`, `EvolucaoClinica`, `ProcedimentoClinico` e `Achado`, com entidade
   de revisão própria: `revisao(id, momento, usuario_id)`.
