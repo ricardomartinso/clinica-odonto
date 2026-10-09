@@ -65,6 +65,12 @@ class OpenApiConfig {
                     .forEach(midia -> coletarReferencias(midia.getSchema(), schemas, usadosEmEntrada));
 
             schemas.forEach((nome, schema) -> {
+                // Ao tratar @Nullable numa propriedade $ref, o springdoc marca o schema referenciado
+                // inteiro como "null"; a nulidade já está na propriedade (oneOf), então restauramos.
+                if (schema.getProperties() != null && schema.getTypes() != null
+                        && schema.getTypes().contains("null")) {
+                    schema.setTypes(new HashSet<>(Set.of("object")));
+                }
                 if (!usadosEmEntrada.contains(nome) && schema.getProperties() != null) {
                     schema.setRequired(new ArrayList<>(schema.getProperties().keySet()));
                 }

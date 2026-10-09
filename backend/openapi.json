@@ -170,7 +170,7 @@
             "type" : [ "string", "null" ]
           }
         },
-        "type" : "null"
+        "type" : "object"
       },
       "DadosResponsavel" : {
         "properties" : {
@@ -194,7 +194,7 @@
           }
         },
         "required" : [ "nome", "telefone" ],
-        "type" : "null"
+        "type" : "object"
       },
       "LoginRequest" : {
         "properties" : {

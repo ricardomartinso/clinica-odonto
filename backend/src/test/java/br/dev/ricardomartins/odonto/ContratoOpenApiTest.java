@@ -31,6 +31,14 @@ class ContratoOpenApiTest extends TesteDeIntegracao {
         String gerado = mvc.perform(get("/v3/api-docs")).andReturn().getResponse().getContentAsString();
         String atual = json.writeValueAsString(json.readValue(gerado, Map.class)) + "\n";
 
+        assertThat(json.readTree(atual).at("/components/schemas"))
+                .as("todo schema de objeto deve ter type object")
+                .allSatisfy(schema -> {
+                    if (schema.has("properties")) {
+                        assertThat(schema.at("/type").asText()).isEqualTo("object");
+                    }
+                });
+
         if (Boolean.getBoolean("openapi.atualizar")) {
             Files.writeString(CONTRATO, atual);
             return;
