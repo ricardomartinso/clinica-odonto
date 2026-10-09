@@ -1,5 +1,7 @@
 # Clínica Odonto
 
+[![CI](https://github.com/ricardomartinso/clinica-odonto/actions/workflows/ci.yml/badge.svg)](https://github.com/ricardomartinso/clinica-odonto/actions/workflows/ci.yml)
+
 Sistema de gestão para clínica odontológica: pacientes e anamnese, agenda, prontuário com auditoria
 e odontograma (notação FDI).
 
@@ -102,3 +104,7 @@ Decisões registradas:
 - [ ] Agenda (consultas sem sobreposição garantida no banco)
 - [ ] Prontuário (evolução clínica e procedimentos por dente/face, auditados)
 - [ ] Odontograma (FDI, permanentes e decíduos)
+
+## Licença
+
+[MIT](LICENSE)
