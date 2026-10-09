@@ -16,8 +16,13 @@ Pré-requisito: Docker.
 docker compose up --build
 ```
 
-A API sobe em `http://localhost:8080` com o perfil `dev`, que carrega os dados fictícios. Saúde:
-`http://localhost:8080/actuator/health`.
+| Serviço       | Endereço                                   |
+|---------------|--------------------------------------------|
+| Aplicação     | http://localhost:3000                      |
+| API           | http://localhost:8080 (também via `:3000/api`) |
+| Documentação  | http://localhost:8080/swagger-ui.html      |
+
+O backend sobe com o perfil `dev`, que carrega os dados fictícios.
 
 | Usuário                 | Senha        | Papel    |
 |-------------------------|--------------|----------|
@@ -44,14 +49,33 @@ curl -s -b cookies 'localhost:8080/api/pacientes?busca=conceicao'
 
 ## Desenvolvimento
 
-Pré-requisitos: Java 21 e Docker (os testes usam Testcontainers com Postgres real).
+Pré-requisitos: Java 21, Node 24 e Docker (os testes do backend usam Testcontainers com Postgres real).
 
 ```bash
-cd backend
-./mvnw verify                                              # build + todos os testes
+docker compose up -d postgres                                        # só o banco
 
-docker compose up -d postgres                              # só o banco
-./mvnw spring-boot:run -Dspring-boot.run.profiles=dev      # API local com dados fictícios
+cd backend
+./mvnw verify                                                        # build + todos os testes
+./mvnw spring-boot:run -Dspring-boot.run.profiles=dev                # API em :8080
+
+cd frontend
+npm install
+npm run dev                                                          # app em :5173
+npm test
+```
+
+### Contrato da API
+
+`backend/openapi.json` é a fonte dos tipos TypeScript do frontend:
+
+1. Um teste do backend falha se a API mudar sem o arquivo ser atualizado.
+2. O CI do frontend falha se os tipos não forem regenerados a partir dele.
+
+Ao alterar a API:
+
+```bash
+cd backend  && ./mvnw test -Dtest=ContratoOpenApiTest -Dopenapi.atualizar=true
+cd frontend && npm run api:gerar
 ```
 
 ## API
@@ -79,7 +103,7 @@ não sobrescreve outra em silêncio.
 
 ## Arquitetura
 
-Monólito modular (Java 21, Spring Boot 3.5, PostgreSQL 17, Flyway), organizado por domínio:
+**Backend.** Monólito modular (Java 21, Spring Boot 3.5, PostgreSQL 17, Flyway), organizado por domínio:
 
 ```
 backend/src/main/java/br/dev/ricardomartins/odonto/
@@ -92,6 +116,9 @@ backend/src/main/java/br/dev/ricardomartins/odonto/
 - Classes internas de cada módulo são package-private.
 - Migrations ficam em `db/migration`. O seed fictício fica em `db/seed` e é carregado só no perfil `dev`.
 
+**Frontend.** React + TypeScript + Vite, TanStack Router/Query, shadcn/ui, react-hook-form + zod.
+Servido por nginx na mesma origem da API. Detalhes em [frontend/README.md](frontend/README.md).
+
 Decisões registradas:
 
 - [ADR 0001 — Monólito modular](docs/adr/0001-monolito-modular.md)
@@ -100,7 +127,7 @@ Decisões registradas:
 
 ## Próximas etapas
 
-- [ ] Frontend (React + TypeScript + Vite + TanStack Query + shadcn/ui)
+- [x] Frontend: login, pacientes e anamnese
 - [ ] Agenda (consultas sem sobreposição garantida no banco)
 - [ ] Prontuário (evolução clínica e procedimentos por dente/face, auditados)
 - [ ] Odontograma (FDI, permanentes e decíduos)
