@@ -31,6 +31,7 @@ jobs:
           cache-dependency-path: backend/pom.xml
 
       # Testcontainers usa o Docker já disponível no runner ubuntu-latest.
+      # Inclui o teste que garante que backend/openapi.json reflete a API atual.
       - name: Build e testes
         run: ./mvnw -B -ntp verify
 
@@ -42,11 +43,53 @@ jobs:
           path: backend/target/surefire-reports/
           retention-days: 7
 
-  docker-image:
-    name: Imagem Docker do backend
+  frontend:
+    name: Frontend (lint + tipos + testes + build)
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: frontend/.nvmrc
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - run: npm ci --no-audit --no-fund
+
+      - name: Tipos da API em dia com o contrato
+        run: |
+          npm run api:gerar
+          git diff --exit-code src/api/schema.d.ts || {
+            echo "::error::src/api/schema.d.ts desatualizado. Rode 'npm run api:gerar' e faça commit."
+            exit 1
+          }
+
+      - run: npm run format:check
+      - run: npm run lint
+      - run: npm run typecheck
+      - run: npm test
+
+      - name: Build
+        run: |
+          npm run build
+          git diff --exit-code src/routeTree.gen.ts || {
+            echo "::error::src/routeTree.gen.ts desatualizado. Rode 'npm run build' e faça commit."
+            exit 1
+          }
+
+  docker-images:
+    name: Imagem Docker (${{ matrix.app }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      matrix:
+        app: [backend, frontend]
     steps:
       - uses: actions/checkout@v4
       - name: Build da imagem
-        run: docker build backend
+        run: docker build ${{ matrix.app }}
