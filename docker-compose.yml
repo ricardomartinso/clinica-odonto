@@ -36,5 +36,13 @@ services:
       retries: 12
       start_period: 20s
 
+  frontend:
+    build: ./frontend
+    ports:
+      - "3000:80"
+    depends_on:
+      backend:
+        condition: service_healthy
+
 volumes:
   postgres-data:
