@@ -1,0 +1,671 @@
+{
+  "components" : {
+    "schemas" : {
+      "AnamneseResponse" : {
+        "properties" : {
+          "alertas" : {
+            "items" : {
+              "enum" : [ "ALERGIA", "ANTICOAGULANTE", "DIABETES", "HIPERTENSAO", "CARDIOPATIA", "COAGULOPATIA", "GESTANTE", "BISFOSFONATOS", "REACAO_ANESTESIA" ],
+              "type" : "string"
+            },
+            "type" : "array"
+          },
+          "atualizadaEm" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "pacienteId" : {
+            "format" : "uuid",
+            "type" : "string"
+          },
+          "respostas" : {
+            "$ref" : "#/components/schemas/DadosDaAnamnese"
+          }
+        },
+        "required" : [ "alertas", "atualizadaEm", "pacienteId", "respostas" ],
+        "type" : "object"
+      },
+      "DadosDaAnamnese" : {
+        "properties" : {
+          "alergiasDescricao" : {
+            "maxLength" : 500,
+            "minLength" : 0,
+            "type" : [ "string", "null" ]
+          },
+          "alergico" : {
+            "type" : [ "boolean", "null" ]
+          },
+          "cardiopatia" : {
+            "type" : [ "boolean", "null" ]
+          },
+          "coagulopatia" : {
+            "type" : [ "boolean", "null" ]
+          },
+          "diabetes" : {
+            "type" : [ "boolean", "null" ]
+          },
+          "fumante" : {
+            "type" : [ "boolean", "null" ]
+          },
+          "gestante" : {
+            "type" : [ "boolean", "null" ]
+          },
+          "hipertensao" : {
+            "type" : [ "boolean", "null" ]
+          },
+          "medicamentosEmUso" : {
+            "maxLength" : 1000,
+            "minLength" : 0,
+            "type" : [ "string", "null" ]
+          },
+          "observacoes" : {
+            "maxLength" : 2000,
+            "minLength" : 0,
+            "type" : [ "string", "null" ]
+          },
+          "reacaoAnestesia" : {
+            "type" : [ "boolean", "null" ]
+          },
+          "semanasGestacao" : {
+            "format" : "int32",
+            "maximum" : 42,
+            "minimum" : 1,
+            "type" : [ "integer", "null" ]
+          },
+          "usaAnticoagulante" : {
+            "type" : [ "boolean", "null" ]
+          },
+          "usaBisfosfonatos" : {
+            "type" : [ "boolean", "null" ]
+          }
+        },
+        "type" : "object"
+      },
+      "DadosDoPaciente" : {
+        "properties" : {
+          "celular" : {
+            "minLength" : 1,
+            "pattern" : "\\d{10,11}",
+            "type" : "string"
+          },
+          "cpf" : {
+            "type" : [ "string", "null" ]
+          },
+          "dataNascimento" : {
+            "format" : "date",
+            "type" : "string"
+          },
+          "email" : {
+            "format" : "email",
+            "maxLength" : 254,
+            "minLength" : 0,
+            "type" : [ "string", "null" ]
+          },
+          "endereco" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/DadosEndereco"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "nome" : {
+            "maxLength" : 150,
+            "minLength" : 0,
+            "type" : "string"
+          },
+          "nomeSocial" : {
+            "maxLength" : 150,
+            "minLength" : 0,
+            "type" : [ "string", "null" ]
+          },
+          "observacoes" : {
+            "maxLength" : 2000,
+            "minLength" : 0,
+            "type" : [ "string", "null" ]
+          },
+          "responsavel" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/DadosResponsavel"
+            }, {
+              "type" : "null"
+            } ]
+          }
+        },
+        "required" : [ "celular", "dataNascimento", "nome" ],
+        "type" : "object"
+      },
+      "DadosEndereco" : {
+        "properties" : {
+          "bairro" : {
+            "maxLength" : 100,
+            "minLength" : 0,
+            "type" : [ "string", "null" ]
+          },
+          "cep" : {
+            "pattern" : "\\d{8}",
+            "type" : [ "string", "null" ]
+          },
+          "cidade" : {
+            "maxLength" : 100,
+            "minLength" : 0,
+            "type" : [ "string", "null" ]
+          },
+          "complemento" : {
+            "maxLength" : 100,
+            "minLength" : 0,
+            "type" : [ "string", "null" ]
+          },
+          "logradouro" : {
+            "maxLength" : 150,
+            "minLength" : 0,
+            "type" : [ "string", "null" ]
+          },
+          "numero" : {
+            "maxLength" : 20,
+            "minLength" : 0,
+            "type" : [ "string", "null" ]
+          },
+          "uf" : {
+            "pattern" : "[A-Z]{2}",
+            "type" : [ "string", "null" ]
+          }
+        },
+        "type" : "null"
+      },
+      "DadosResponsavel" : {
+        "properties" : {
+          "cpf" : {
+            "type" : [ "string", "null" ]
+          },
+          "nome" : {
+            "maxLength" : 150,
+            "minLength" : 0,
+            "type" : "string"
+          },
+          "parentesco" : {
+            "maxLength" : 50,
+            "minLength" : 0,
+            "type" : [ "string", "null" ]
+          },
+          "telefone" : {
+            "minLength" : 1,
+            "pattern" : "\\d{10,11}",
+            "type" : "string"
+          }
+        },
+        "required" : [ "nome", "telefone" ],
+        "type" : "null"
+      },
+      "LoginRequest" : {
+        "properties" : {
+          "email" : {
+            "minLength" : 1,
+            "type" : "string"
+          },
+          "senha" : {
+            "minLength" : 1,
+            "type" : "string"
+          }
+        },
+        "required" : [ "email", "senha" ],
+        "type" : "object"
+      },
+      "PacienteResponse" : {
+        "properties" : {
+          "ativo" : {
+            "type" : "boolean"
+          },
+          "atualizadoEm" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "celular" : {
+            "type" : "string"
+          },
+          "cpf" : {
+            "type" : [ "string", "null" ]
+          },
+          "criadoEm" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "dataNascimento" : {
+            "format" : "date",
+            "type" : "string"
+          },
+          "email" : {
+            "type" : [ "string", "null" ]
+          },
+          "endereco" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/DadosEndereco"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "id" : {
+            "format" : "uuid",
+            "type" : "string"
+          },
+          "nome" : {
+            "type" : "string"
+          },
+          "nomeSocial" : {
+            "type" : [ "string", "null" ]
+          },
+          "observacoes" : {
+            "type" : [ "string", "null" ]
+          },
+          "responsavel" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/DadosResponsavel"
+            }, {
+              "type" : "null"
+            } ]
+          }
+        },
+        "required" : [ "ativo", "atualizadoEm", "celular", "cpf", "criadoEm", "dataNascimento", "email", "endereco", "id", "nome", "nomeSocial", "observacoes", "responsavel" ],
+        "type" : "object"
+      },
+      "PacienteResumo" : {
+        "properties" : {
+          "ativo" : {
+            "type" : "boolean"
+          },
+          "cpfMascarado" : {
+            "type" : [ "string", "null" ]
+          },
+          "dataNascimento" : {
+            "format" : "date",
+            "type" : "string"
+          },
+          "id" : {
+            "format" : "uuid",
+            "type" : "string"
+          },
+          "nome" : {
+            "type" : "string"
+          },
+          "nomeSocial" : {
+            "type" : [ "string", "null" ]
+          }
+        },
+        "required" : [ "ativo", "cpfMascarado", "dataNascimento", "id", "nome", "nomeSocial" ],
+        "type" : "object"
+      },
+      "PageMetadata" : {
+        "properties" : {
+          "number" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "size" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "totalElements" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "totalPages" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        },
+        "required" : [ "number", "size", "totalElements", "totalPages" ],
+        "type" : "object"
+      },
+      "PagedModelPacienteResumo" : {
+        "properties" : {
+          "content" : {
+            "items" : {
+              "$ref" : "#/components/schemas/PacienteResumo"
+            },
+            "type" : "array"
+          },
+          "page" : {
+            "$ref" : "#/components/schemas/PageMetadata"
+          }
+        },
+        "required" : [ "content", "page" ],
+        "type" : "object"
+      },
+      "UsuarioLogadoResponse" : {
+        "properties" : {
+          "email" : {
+            "type" : "string"
+          },
+          "id" : {
+            "format" : "uuid",
+            "type" : "string"
+          },
+          "nome" : {
+            "type" : "string"
+          },
+          "papel" : {
+            "enum" : [ "DENTISTA", "RECEPCAO" ],
+            "type" : "string"
+          }
+        },
+        "required" : [ "email", "id", "nome", "papel" ],
+        "type" : "object"
+      }
+    }
+  },
+  "info" : {
+    "description" : "API do sistema de gestão da clínica. Todos os dados são fictícios.",
+    "title" : "Clínica Odonto API",
+    "version" : "v1"
+  },
+  "openapi" : "3.1.0",
+  "paths" : {
+    "/api/auth/login" : {
+      "post" : {
+        "operationId" : "login",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/LoginRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/UsuarioLogadoResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "auth-controller" ]
+      }
+    },
+    "/api/auth/me" : {
+      "get" : {
+        "operationId" : "usuarioAtual",
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/UsuarioLogadoResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "auth-controller" ]
+      }
+    },
+    "/api/pacientes" : {
+      "get" : {
+        "operationId" : "pesquisar",
+        "parameters" : [ {
+          "in" : "query",
+          "name" : "busca",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "incluirInativos",
+          "required" : false,
+          "schema" : {
+            "default" : false,
+            "type" : "boolean"
+          }
+        }, {
+          "in" : "query",
+          "name" : "pagina",
+          "required" : false,
+          "schema" : {
+            "default" : 0,
+            "format" : "int32",
+            "minimum" : 0,
+            "type" : "integer"
+          }
+        }, {
+          "in" : "query",
+          "name" : "tamanho",
+          "required" : false,
+          "schema" : {
+            "default" : 20,
+            "format" : "int32",
+            "maximum" : 100,
+            "minimum" : 1,
+            "type" : "integer"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/PagedModelPacienteResumo"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "paciente-controller" ]
+      },
+      "post" : {
+        "operationId" : "cadastrar",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/DadosDoPaciente"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/PacienteResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "paciente-controller" ]
+      }
+    },
+    "/api/pacientes/{id}" : {
+      "get" : {
+        "operationId" : "buscar_1",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "uuid",
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/PacienteResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "paciente-controller" ]
+      },
+      "put" : {
+        "operationId" : "atualizar",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "uuid",
+            "type" : "string"
+          }
+        }, {
+          "in" : "header",
+          "name" : "If-Match",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/DadosDoPaciente"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/PacienteResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "paciente-controller" ]
+      }
+    },
+    "/api/pacientes/{id}/inativar" : {
+      "post" : {
+        "operationId" : "inativar",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "uuid",
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "paciente-controller" ]
+      }
+    },
+    "/api/pacientes/{id}/reativar" : {
+      "post" : {
+        "operationId" : "reativar",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "uuid",
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "paciente-controller" ]
+      }
+    },
+    "/api/pacientes/{pacienteId}/anamnese" : {
+      "get" : {
+        "operationId" : "buscar",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "pacienteId",
+          "required" : true,
+          "schema" : {
+            "format" : "uuid",
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/AnamneseResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "anamnese-controller" ]
+      },
+      "put" : {
+        "operationId" : "gravar",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "pacienteId",
+          "required" : true,
+          "schema" : {
+            "format" : "uuid",
+            "type" : "string"
+          }
+        }, {
+          "in" : "header",
+          "name" : "If-Match",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/DadosDaAnamnese"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/AnamneseResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "anamnese-controller" ]
+      }
+    }
+  },
+  "servers" : [ {
+    "url" : "/"
+  } ]
+}

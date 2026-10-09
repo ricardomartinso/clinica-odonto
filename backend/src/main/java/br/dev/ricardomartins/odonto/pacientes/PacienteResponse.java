@@ -6,19 +6,20 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.UUID;
+import org.springframework.lang.Nullable;
 
 /** Detalhe do paciente. A anamnese não vem aqui: tem endpoint e permissão próprios. */
 public record PacienteResponse(
         UUID id,
         String nome,
-        String nomeSocial,
+        @Nullable String nomeSocial,
         LocalDate dataNascimento,
-        String cpf,
+        @Nullable String cpf,
         String celular,
-        String email,
-        DadosEndereco endereco,
-        DadosResponsavel responsavel,
-        String observacoes,
+        @Nullable String email,
+        @Nullable DadosEndereco endereco,
+        @Nullable DadosResponsavel responsavel,
+        @Nullable String observacoes,
         boolean ativo,
         Instant criadoEm,
         Instant atualizadoEm,

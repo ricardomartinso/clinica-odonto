@@ -2,14 +2,15 @@ package br.dev.ricardomartins.odonto.pacientes;
 
 import java.time.LocalDate;
 import java.util.UUID;
+import org.springframework.lang.Nullable;
 
 /** Item da listagem: só o necessário para identificar o paciente, com CPF mascarado e sem contatos. */
 public record PacienteResumo(
         UUID id,
         String nome,
-        String nomeSocial,
+        @Nullable String nomeSocial,
         LocalDate dataNascimento,
-        String cpfMascarado,
+        @Nullable String cpfMascarado,
         boolean ativo) {
 
     static PacienteResumo de(Paciente paciente) {
