@@ -91,7 +91,17 @@ export function FormularioDeProcedimento({ rotuloConfirmar, aoConfirmar, aoCance
   })
 
   return (
-    <div className="space-y-4">
+    // Este formulário fica dentro do formulário do atendimento: Enter num campo aqui deve confirmar o
+    // procedimento, não enviar o atendimento inteiro.
+    <div
+      className="space-y-4"
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' && e.target instanceof HTMLInputElement) {
+          e.preventDefault()
+          void confirmar()
+        }
+      }}
+    >
       {form.formState.errors.root && (
         <Alert variant="destructive">
           <AlertDescription>{form.formState.errors.root.message}</AlertDescription>

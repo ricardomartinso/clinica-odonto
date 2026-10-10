@@ -55,6 +55,11 @@ function RegistrarAtendimento() {
   const [realizados, setRealizados] = useState<string[]>([])
   const [naoPlanejados, setNaoPlanejados] = useState<NaoPlanejado[]>([])
   const [incluindo, setIncluindo] = useState(false)
+  const [avisoInclusao, setAvisoInclusao] = useState(false)
+  const fecharInclusao = () => {
+    setIncluindo(false)
+    setAvisoInclusao(false)
+  }
   const form = useForm({
     resolver: zodResolver(esquemaEvolucao),
     defaultValues: { dataAtendimento: hojeIso(), texto: '' },
@@ -75,8 +80,18 @@ function RegistrarAtendimento() {
     }
   })
 
+  /** Um procedimento preenchido mas não incluído seria descartado em silêncio: exige uma decisão. */
+  const enviar = (evento: React.FormEvent<HTMLFormElement>) => {
+    if (incluindo) {
+      evento.preventDefault()
+      setAvisoInclusao(true)
+      return
+    }
+    void salvar(evento)
+  }
+
   return (
-    <form onSubmit={salvar} noValidate className="max-w-3xl space-y-6">
+    <form onSubmit={enviar} noValidate className="max-w-3xl space-y-6">
       <div>
         <h1 className="text-2xl font-semibold">Registrar atendimento</h1>
         <p className="text-muted-foreground">
@@ -174,13 +189,21 @@ function RegistrarAtendimento() {
           )}
 
           {incluindo ? (
-            <div className="rounded-md border p-4">
+            <div className="space-y-4 rounded-md border p-4">
+              {avisoInclusao && (
+                <Alert variant="destructive">
+                  <AlertDescription>
+                    Há um procedimento não planejado em edição. Clique em “Incluir” para adicioná-lo ao
+                    atendimento ou em “Cancelar” para descartá-lo.
+                  </AlertDescription>
+                </Alert>
+              )}
               <FormularioDeProcedimento
                 rotuloConfirmar="Incluir"
-                aoCancelar={() => setIncluindo(false)}
+                aoCancelar={fecharInclusao}
                 aoConfirmar={(dados, descricao) => {
                   setNaoPlanejados((atual) => [...atual, { chave: Date.now(), dados, descricao }])
-                  setIncluindo(false)
+                  fecharInclusao()
                 }}
               />
             </div>

@@ -136,6 +136,53 @@ describe('registro de atendimento', () => {
   })
 })
 
+describe('procedimento não planejado em edição', () => {
+  beforeEach(() => apiFalsa.entrarComo('DENTISTA'))
+
+  async function abrirInclusao(renderizado: ReturnType<typeof renderizarApp>) {
+    const { screen, usuario } = renderizado
+    await usuario.type(await screen.findByLabelText('Evolução'), 'Atendimento de urgência.')
+    await usuario.click(screen.getByRole('button', { name: 'Incluir procedimento não planejado' }))
+    await usuario.selectOptions(await screen.findByLabelText('Procedimento'), 'Exodontia simples')
+    await usuario.selectOptions(screen.getByLabelText('Dente (FDI)'), '48')
+  }
+
+  const envios = () =>
+    apiFalsa.recebidos().filter((r) => r.metodo === 'POST' && r.caminho.endsWith('/evolucoes'))
+
+  it('não registra o atendimento descartando em silêncio um procedimento ainda não incluído', async () => {
+    const renderizado = renderizarApp(`/pacientes/${paciente.id}/atendimento`)
+    const { screen, usuario } = renderizado
+    await abrirInclusao(renderizado)
+
+    await usuario.click(screen.getByRole('button', { name: 'Registrar atendimento' }))
+
+    expect(await screen.findByText(/procedimento não planejado em edição/)).toBeInTheDocument()
+    expect(envios()).toHaveLength(0)
+
+    await usuario.click(screen.getByRole('button', { name: 'Incluir' }))
+    await usuario.click(screen.getByRole('button', { name: 'Registrar atendimento' }))
+
+    await waitFor(() => expect(envios()).toHaveLength(1))
+    expect(envios()[0]?.corpo).toMatchObject({
+      novosProcedimentos: [{ procedimentoId: 'c-exodontia', dente: 48 }],
+    })
+  })
+
+  it('Enter num campo do procedimento inclui o procedimento em vez de enviar o atendimento', async () => {
+    const renderizado = renderizarApp(`/pacientes/${paciente.id}/atendimento`)
+    const { screen, usuario } = renderizado
+    await abrirInclusao(renderizado)
+
+    await usuario.type(screen.getByLabelText('Observação'), 'Fragmento radicular{Enter}')
+
+    expect(await screen.findByRole('list', { name: 'Procedimentos não planejados' })).toHaveTextContent(
+      'Exodontia simples · Dente 48',
+    )
+    expect(envios()).toHaveLength(0)
+  })
+})
+
 describe('evoluções', () => {
   beforeEach(() => apiFalsa.entrarComo('DENTISTA'))
 
