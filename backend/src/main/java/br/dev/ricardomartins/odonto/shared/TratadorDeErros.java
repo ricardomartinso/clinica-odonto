@@ -76,6 +76,11 @@ class TratadorDeErros extends ResponseEntityExceptionHandler {
         return problema(HttpStatus.CONFLICT, "Conflito", "A operação viola uma restrição de integridade dos dados.");
     }
 
+    @ExceptionHandler(OperacaoNaoPermitidaException.class)
+    ProblemDetail operacaoNaoPermitida(OperacaoNaoPermitidaException ex) {
+        return problema(HttpStatus.FORBIDDEN, "Acesso negado", ex.getMessage());
+    }
+
     /** Lançada por {@code @PreAuthorize}; sem este handler cairia no tratamento genérico como 500. */
     @ExceptionHandler(AccessDeniedException.class)
     ProblemDetail acessoNegado(AccessDeniedException ex) {

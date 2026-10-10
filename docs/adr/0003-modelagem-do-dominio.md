@@ -59,20 +59,31 @@ bisfosfonatos, reação prévia à anestesia), medicamentos em uso e observaçõ
 
 ## prontuario
 
-**EvolucaoClinica** (auditada): `id`, `paciente_id`, `autor_id`, `consulta_id?`, `data_atendimento`,
-`texto`, `anulada_em?`, `motivo_anulacao?`. Editável apenas pelo autor ⚑ (Envers guarda as versões);
-sem exclusão, apenas anulação com motivo.
+**Procedimento** (catálogo, dado de referência em migration versionada): `id`, `nome`,
+`abrangencia` (`BOCA` | `ARCADA` | `DENTE` | `FACE`), `ativo`. Conteúdo do catálogo e abrangência por
+sextante ⚑ (hoje: 21 procedimentos comuns, sem códigos TUSS).
 
-**Procedimento** (catálogo): `id`, `nome`, `abrangencia` (`BOCA` | `ARCADA` | `DENTE` | `FACE`),
-`ativo`.
+**EvolucaoClinica** (auditada): `id`, `paciente_id`, `autor_id`, `data_atendimento` (não futura),
+`texto`, `editada_em?`, `anulada_em?`, `anulada_por?`, `motivo_anulacao?`.
+
+- Editável e anulável apenas pelo autor ⚑, sem prazo; cada versão fica no Envers e é exposta em
+  `GET …/evolucoes/{id}/historico`. Sem exclusão.
 
 **ProcedimentoClinico** (auditado): `id`, `paciente_id`, `procedimento_id`, `dente?`, `faces`,
-`arcada?`, `status`, `dentista_id`, `data_realizacao?`, `evolucao_id?`, `observacao?`.
+`arcada?`, `status`, `observacao?`, `evolucao_id?`, `realizado_em?`, `realizado_por?`, `motivo?`.
 
 - Consistência com a abrangência: `FACE` exige dente e ≥ 1 face; `DENTE` exige dente e nenhuma face;
   `ARCADA` exige arcada; `BOCA` nenhum dos três.
-- Estados: `PLANEJADO → REALIZADO | CANCELADO`; `REALIZADO → ANULADO` (erro de registro, com motivo).
-- Ao realizar, publica `ProcedimentoRealizado` (evento Spring em processo).
+- Estados: `PLANEJADO → REALIZADO | CANCELADO`; `REALIZADO → ANULADO` (erro de registro). Cancelar e
+  anular exigem motivo; só quem realizou pode anular.
+
+Decisões aprovadas (2026-10-09):
+
+1. **Realização só dentro de uma evolução**: todo procedimento feito fica documentado em um registro
+   clínico. Garantido também por CHECK no banco (`REALIZADO`/`ANULADO` ⇔ evolução, data e autor).
+2. **Registro de atendimento atômico**: `POST …/evolucoes` cria a evolução, realiza os planejados
+   informados e inclui os não planejados numa única transação.
+3. **Anular a evolução anula em cascata** os procedimentos realizados nela, com o mesmo motivo.
 
 ## odontograma
 

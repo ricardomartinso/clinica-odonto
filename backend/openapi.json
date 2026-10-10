@@ -25,6 +25,35 @@
         "required" : [ "alertas", "atualizadaEm", "pacienteId", "respostas" ],
         "type" : "object"
       },
+      "Anulacao" : {
+        "properties" : {
+          "em" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "motivo" : {
+            "type" : "string"
+          },
+          "por" : {
+            "$ref" : "#/components/schemas/Autor"
+          }
+        },
+        "required" : [ "em", "motivo", "por" ],
+        "type" : "object"
+      },
+      "Autor" : {
+        "properties" : {
+          "id" : {
+            "format" : "uuid",
+            "type" : "string"
+          },
+          "nome" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "id", "nome" ],
+        "type" : "object"
+      },
       "DadosDaAnamnese" : {
         "properties" : {
           "alergiasDescricao" : {
@@ -134,6 +163,37 @@
         "required" : [ "celular", "dataNascimento", "nome" ],
         "type" : "object"
       },
+      "DadosDoProcedimento" : {
+        "properties" : {
+          "arcada" : {
+            "enum" : [ "SUPERIOR", "INFERIOR" ],
+            "type" : [ "string", "null" ]
+          },
+          "dente" : {
+            "format" : "int32",
+            "type" : [ "integer", "null" ]
+          },
+          "faces" : {
+            "items" : {
+              "enum" : [ "M", "D", "O_I", "V", "L_P" ],
+              "type" : "string"
+            },
+            "type" : [ "array", "null" ],
+            "uniqueItems" : true
+          },
+          "observacao" : {
+            "maxLength" : 500,
+            "minLength" : 0,
+            "type" : [ "string", "null" ]
+          },
+          "procedimentoId" : {
+            "format" : "uuid",
+            "type" : "string"
+          }
+        },
+        "required" : [ "procedimentoId" ],
+        "type" : "object"
+      },
       "DadosEndereco" : {
         "properties" : {
           "bairro" : {
@@ -194,6 +254,73 @@
           }
         },
         "required" : [ "nome", "telefone" ],
+        "type" : "object"
+      },
+      "EdicaoDeEvolucao" : {
+        "properties" : {
+          "dataAtendimento" : {
+            "format" : "date",
+            "type" : "string"
+          },
+          "texto" : {
+            "maxLength" : 10000,
+            "minLength" : 0,
+            "type" : "string"
+          }
+        },
+        "required" : [ "dataAtendimento", "texto" ],
+        "type" : "object"
+      },
+      "EvolucaoResponse" : {
+        "properties" : {
+          "anulacao" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/Anulacao"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "autor" : {
+            "$ref" : "#/components/schemas/Autor"
+          },
+          "criadoEm" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "dataAtendimento" : {
+            "format" : "date",
+            "type" : "string"
+          },
+          "editadaEm" : {
+            "format" : "date-time",
+            "type" : [ "string", "null" ]
+          },
+          "id" : {
+            "format" : "uuid",
+            "type" : "string"
+          },
+          "procedimentosRealizados" : {
+            "items" : {
+              "$ref" : "#/components/schemas/ProcedimentoClinicoResponse"
+            },
+            "type" : "array"
+          },
+          "texto" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "anulacao", "autor", "criadoEm", "dataAtendimento", "editadaEm", "id", "procedimentosRealizados", "texto" ],
+        "type" : "object"
+      },
+      "Justificativa" : {
+        "properties" : {
+          "motivo" : {
+            "maxLength" : 500,
+            "minLength" : 0,
+            "type" : "string"
+          }
+        },
+        "required" : [ "motivo" ],
         "type" : "object"
       },
       "LoginRequest" : {
@@ -315,6 +442,21 @@
         "required" : [ "number", "size", "totalElements", "totalPages" ],
         "type" : "object"
       },
+      "PagedModelEvolucaoResponse" : {
+        "properties" : {
+          "content" : {
+            "items" : {
+              "$ref" : "#/components/schemas/EvolucaoResponse"
+            },
+            "type" : "array"
+          },
+          "page" : {
+            "$ref" : "#/components/schemas/PageMetadata"
+          }
+        },
+        "required" : [ "content", "page" ],
+        "type" : "object"
+      },
       "PagedModelPacienteResumo" : {
         "properties" : {
           "content" : {
@@ -328,6 +470,104 @@
           }
         },
         "required" : [ "content", "page" ],
+        "type" : "object"
+      },
+      "ProcedimentoClinicoResponse" : {
+        "properties" : {
+          "arcada" : {
+            "enum" : [ "SUPERIOR", "INFERIOR" ],
+            "type" : [ "string", "null" ]
+          },
+          "criadoEm" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "dente" : {
+            "format" : "int32",
+            "type" : [ "integer", "null" ]
+          },
+          "evolucaoId" : {
+            "format" : "uuid",
+            "type" : [ "string", "null" ]
+          },
+          "faces" : {
+            "items" : {
+              "enum" : [ "M", "D", "O_I", "V", "L_P" ],
+              "type" : "string"
+            },
+            "type" : "array"
+          },
+          "id" : {
+            "format" : "uuid",
+            "type" : "string"
+          },
+          "local" : {
+            "type" : "string"
+          },
+          "motivo" : {
+            "type" : [ "string", "null" ]
+          },
+          "observacao" : {
+            "type" : [ "string", "null" ]
+          },
+          "procedimento" : {
+            "$ref" : "#/components/schemas/ProcedimentoDoCatalogo"
+          },
+          "realizadoEm" : {
+            "format" : "date",
+            "type" : [ "string", "null" ]
+          },
+          "status" : {
+            "enum" : [ "PLANEJADO", "REALIZADO", "CANCELADO", "ANULADO" ],
+            "type" : "string"
+          }
+        },
+        "required" : [ "arcada", "criadoEm", "dente", "evolucaoId", "faces", "id", "local", "motivo", "observacao", "procedimento", "realizadoEm", "status" ],
+        "type" : "object"
+      },
+      "ProcedimentoDoCatalogo" : {
+        "properties" : {
+          "abrangencia" : {
+            "enum" : [ "BOCA", "ARCADA", "DENTE", "FACE" ],
+            "type" : "string"
+          },
+          "id" : {
+            "format" : "uuid",
+            "type" : "string"
+          },
+          "nome" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "abrangencia", "id", "nome" ],
+        "type" : "object"
+      },
+      "RegistroDeAtendimento" : {
+        "properties" : {
+          "dataAtendimento" : {
+            "format" : "date",
+            "type" : "string"
+          },
+          "novosProcedimentos" : {
+            "items" : {
+              "$ref" : "#/components/schemas/DadosDoProcedimento"
+            },
+            "type" : [ "array", "null" ]
+          },
+          "procedimentosRealizados" : {
+            "items" : {
+              "format" : "uuid",
+              "type" : "string"
+            },
+            "type" : [ "array", "null" ]
+          },
+          "texto" : {
+            "maxLength" : 10000,
+            "minLength" : 0,
+            "type" : "string"
+          }
+        },
+        "required" : [ "dataAtendimento", "texto" ],
         "type" : "object"
       },
       "UsuarioLogadoResponse" : {
@@ -348,6 +588,34 @@
           }
         },
         "required" : [ "email", "id", "nome", "papel" ],
+        "type" : "object"
+      },
+      "VersaoDaEvolucao" : {
+        "properties" : {
+          "alteradaPor" : {
+            "$ref" : "#/components/schemas/Autor"
+          },
+          "dataAtendimento" : {
+            "format" : "date",
+            "type" : "string"
+          },
+          "momento" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "revisao" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "texto" : {
+            "type" : "string"
+          },
+          "tipo" : {
+            "enum" : [ "CRIACAO", "EDICAO", "ANULACAO" ],
+            "type" : "string"
+          }
+        },
+        "required" : [ "alteradaPor", "dataAtendimento", "momento", "revisao", "texto", "tipo" ],
         "type" : "object"
       }
     }
@@ -488,7 +756,7 @@
     },
     "/api/pacientes/{id}" : {
       "get" : {
-        "operationId" : "buscar_1",
+        "operationId" : "buscar_2",
         "parameters" : [ {
           "in" : "path",
           "name" : "id",
@@ -597,7 +865,7 @@
     },
     "/api/pacientes/{pacienteId}/anamnese" : {
       "get" : {
-        "operationId" : "buscar",
+        "operationId" : "buscar_1",
         "parameters" : [ {
           "in" : "path",
           "name" : "pacienteId",
@@ -662,6 +930,445 @@
           }
         },
         "tags" : [ "anamnese-controller" ]
+      }
+    },
+    "/api/pacientes/{pacienteId}/evolucoes" : {
+      "get" : {
+        "operationId" : "listar_1",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "pacienteId",
+          "required" : true,
+          "schema" : {
+            "format" : "uuid",
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "pagina",
+          "required" : false,
+          "schema" : {
+            "default" : 0,
+            "format" : "int32",
+            "minimum" : 0,
+            "type" : "integer"
+          }
+        }, {
+          "in" : "query",
+          "name" : "tamanho",
+          "required" : false,
+          "schema" : {
+            "default" : 10,
+            "format" : "int32",
+            "maximum" : 50,
+            "minimum" : 1,
+            "type" : "integer"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/PagedModelEvolucaoResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "evolucao-controller" ]
+      },
+      "post" : {
+        "operationId" : "registrar",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "pacienteId",
+          "required" : true,
+          "schema" : {
+            "format" : "uuid",
+            "type" : "string"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/RegistroDeAtendimento"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/EvolucaoResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "evolucao-controller" ]
+      }
+    },
+    "/api/pacientes/{pacienteId}/evolucoes/{id}" : {
+      "get" : {
+        "operationId" : "buscar",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "pacienteId",
+          "required" : true,
+          "schema" : {
+            "format" : "uuid",
+            "type" : "string"
+          }
+        }, {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "uuid",
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/EvolucaoResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "evolucao-controller" ]
+      },
+      "put" : {
+        "operationId" : "editar",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "pacienteId",
+          "required" : true,
+          "schema" : {
+            "format" : "uuid",
+            "type" : "string"
+          }
+        }, {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "uuid",
+            "type" : "string"
+          }
+        }, {
+          "in" : "header",
+          "name" : "If-Match",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/EdicaoDeEvolucao"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/EvolucaoResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "evolucao-controller" ]
+      }
+    },
+    "/api/pacientes/{pacienteId}/evolucoes/{id}/anular" : {
+      "post" : {
+        "operationId" : "anular_1",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "pacienteId",
+          "required" : true,
+          "schema" : {
+            "format" : "uuid",
+            "type" : "string"
+          }
+        }, {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "uuid",
+            "type" : "string"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/Justificativa"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/EvolucaoResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "evolucao-controller" ]
+      }
+    },
+    "/api/pacientes/{pacienteId}/evolucoes/{id}/historico" : {
+      "get" : {
+        "operationId" : "historico",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "pacienteId",
+          "required" : true,
+          "schema" : {
+            "format" : "uuid",
+            "type" : "string"
+          }
+        }, {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "uuid",
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "items" : {
+                    "$ref" : "#/components/schemas/VersaoDaEvolucao"
+                  },
+                  "type" : "array"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "evolucao-controller" ]
+      }
+    },
+    "/api/pacientes/{pacienteId}/procedimentos" : {
+      "get" : {
+        "operationId" : "listar",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "pacienteId",
+          "required" : true,
+          "schema" : {
+            "format" : "uuid",
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "status",
+          "required" : false,
+          "schema" : {
+            "items" : {
+              "enum" : [ "PLANEJADO", "REALIZADO", "CANCELADO", "ANULADO" ],
+              "type" : "string"
+            },
+            "type" : "array",
+            "uniqueItems" : true
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "items" : {
+                    "$ref" : "#/components/schemas/ProcedimentoClinicoResponse"
+                  },
+                  "type" : "array"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "procedimento-clinico-controller" ]
+      },
+      "post" : {
+        "operationId" : "planejar",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "pacienteId",
+          "required" : true,
+          "schema" : {
+            "format" : "uuid",
+            "type" : "string"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/DadosDoProcedimento"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProcedimentoClinicoResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "procedimento-clinico-controller" ]
+      }
+    },
+    "/api/pacientes/{pacienteId}/procedimentos/{id}/anular" : {
+      "post" : {
+        "operationId" : "anular",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "pacienteId",
+          "required" : true,
+          "schema" : {
+            "format" : "uuid",
+            "type" : "string"
+          }
+        }, {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "uuid",
+            "type" : "string"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/Justificativa"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProcedimentoClinicoResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "procedimento-clinico-controller" ]
+      }
+    },
+    "/api/pacientes/{pacienteId}/procedimentos/{id}/cancelar" : {
+      "post" : {
+        "operationId" : "cancelar",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "pacienteId",
+          "required" : true,
+          "schema" : {
+            "format" : "uuid",
+            "type" : "string"
+          }
+        }, {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "uuid",
+            "type" : "string"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/Justificativa"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProcedimentoClinicoResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "procedimento-clinico-controller" ]
+      }
+    },
+    "/api/procedimentos" : {
+      "get" : {
+        "operationId" : "catalogo",
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "items" : {
+                    "$ref" : "#/components/schemas/ProcedimentoDoCatalogo"
+                  },
+                  "type" : "array"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "procedimento-clinico-controller" ]
       }
     }
   },
