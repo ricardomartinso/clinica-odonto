@@ -196,6 +196,22 @@ export interface paths {
     patch?: never
     trace?: never
   }
+  '/api/pacientes/{pacienteId}/procedimentos/lote': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    post: operations['planejarEmLote']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
   '/api/pacientes/{pacienteId}/procedimentos/{id}/anular': {
     parameters: {
       query?: never
@@ -404,6 +420,9 @@ export interface components {
     PagedModelPacienteResumo: {
       content: components['schemas']['PacienteResumo'][]
       page: components['schemas']['PageMetadata']
+    }
+    PlanejamentoEmLote: {
+      procedimentos: components['schemas']['DadosDoProcedimento'][]
     }
     ProcedimentoClinicoResponse: {
       /** @enum {string|null} */
@@ -901,6 +920,32 @@ export interface operations {
         }
         content: {
           '*/*': components['schemas']['ProcedimentoClinicoResponse']
+        }
+      }
+    }
+  }
+  planejarEmLote: {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        pacienteId: string
+      }
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['PlanejamentoEmLote']
+      }
+    }
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          '*/*': components['schemas']['ProcedimentoClinicoResponse'][]
         }
       }
     }

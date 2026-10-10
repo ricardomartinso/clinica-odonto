@@ -56,11 +56,13 @@ describe('plano de tratamento', () => {
       'Restauração em resina composta',
     )
 
-    await usuario.selectOptions(within(dialogo).getByLabelText('Dente (FDI)'), '11')
+    await usuario.click(within(dialogo).getByRole('button', { name: 'Dente 11' }))
     expect(within(dialogo).getByRole('checkbox', { name: 'Incisal' })).toBeInTheDocument()
     expect(within(dialogo).getByRole('checkbox', { name: 'Palatina' })).toBeInTheDocument()
 
-    await usuario.selectOptions(within(dialogo).getByLabelText('Dente (FDI)'), '36')
+    await usuario.click(within(dialogo).getByRole('button', { name: 'Dente 36' }))
+    // restauração: um dente por vez (as faces mudam de dente para dente)
+    expect(within(dialogo).getByRole('button', { name: 'Dente 11' })).toHaveAttribute('aria-pressed', 'false')
     expect(within(dialogo).getByRole('checkbox', { name: 'Oclusal' })).toBeInTheDocument()
     expect(within(dialogo).getByRole('checkbox', { name: 'Lingual' })).toBeInTheDocument()
 
@@ -73,16 +75,66 @@ describe('plano de tratamento', () => {
 
     const plano = await screen.findByRole('list', { name: 'Procedimentos planejados' })
     expect(plano).toHaveTextContent('36 · Mesial, Oclusal')
-    const envio = apiFalsa
-      .recebidos()
-      .find((r) => r.metodo === 'POST' && r.caminho.endsWith('/procedimentos'))
+    const envio = apiFalsa.recebidos().find((r) => r.caminho.endsWith('/procedimentos/lote'))
     expect(envio?.corpo).toEqual({
-      procedimentoId: 'c-restauracao',
-      dente: 36,
-      faces: ['M', 'O_I'],
-      arcada: null,
-      observacao: null,
+      procedimentos: [
+        { procedimentoId: 'c-restauracao', dente: 36, faces: ['M', 'O_I'], arcada: null, observacao: null },
+      ],
     })
+  })
+
+  it('"Ambas as arcadas" gera um item por arcada numa única ação', async () => {
+    const { screen, usuario } = renderizarApp(prontuario())
+
+    await usuario.click(await screen.findByRole('button', { name: 'Planejar procedimento' }))
+    const dialogo = await screen.findByRole('dialog')
+    await usuario.selectOptions(
+      await within(dialogo).findByLabelText('Procedimento'),
+      'Raspagem supragengival',
+    )
+    await usuario.selectOptions(within(dialogo).getByLabelText('Arcada'), 'Ambas as arcadas')
+    await usuario.click(within(dialogo).getByRole('button', { name: 'Adicionar ao plano (2)' }))
+
+    const plano = await screen.findByRole('list', { name: 'Procedimentos planejados' })
+    expect(plano).toHaveTextContent('Arcada superior')
+    expect(plano).toHaveTextContent('Arcada inferior')
+    expect(apiFalsa.recebidos().filter((r) => r.caminho.endsWith('/procedimentos/lote'))).toHaveLength(1)
+  })
+
+  it('procedimento por dente aceita vários dentes de uma vez', async () => {
+    const { screen, usuario } = renderizarApp(prontuario())
+
+    await usuario.click(await screen.findByRole('button', { name: 'Planejar procedimento' }))
+    const dialogo = await screen.findByRole('dialog')
+    await usuario.selectOptions(await within(dialogo).findByLabelText('Procedimento'), 'Exodontia simples')
+    await usuario.click(within(dialogo).getByRole('button', { name: 'Adicionar ao plano' }))
+    expect(await within(dialogo).findByText('Escolha ao menos um dente')).toBeInTheDocument()
+
+    for (const dente of ['18', '28', '38', '48']) {
+      await usuario.click(within(dialogo).getByRole('button', { name: `Dente ${dente}` }))
+    }
+    expect(within(dialogo).getByText('Selecionados: 18, 28, 38, 48')).toBeInTheDocument()
+    await usuario.click(within(dialogo).getByRole('button', { name: 'Adicionar ao plano (4)' }))
+
+    const plano = await screen.findByRole('list', { name: 'Procedimentos planejados' })
+    for (const dente of ['18', '28', '38', '48']) expect(plano).toHaveTextContent(`Dente ${dente}`)
+  })
+
+  it('dentes decíduos ficam disponíveis no seletor', async () => {
+    const { screen, usuario } = renderizarApp(prontuario())
+
+    await usuario.click(await screen.findByRole('button', { name: 'Planejar procedimento' }))
+    const dialogo = await screen.findByRole('dialog')
+    await usuario.selectOptions(await within(dialogo).findByLabelText('Procedimento'), 'Exodontia simples')
+    expect(within(dialogo).queryByRole('button', { name: 'Dente 75' })).not.toBeInTheDocument()
+
+    await usuario.click(within(dialogo).getByRole('button', { name: 'Mostrar decíduos' }))
+    await usuario.click(within(dialogo).getByRole('button', { name: 'Dente 75' }))
+    await usuario.click(within(dialogo).getByRole('button', { name: 'Adicionar ao plano' }))
+
+    expect(await screen.findByRole('list', { name: 'Procedimentos planejados' })).toHaveTextContent(
+      'Dente 75',
+    )
   })
 
   it('cancelar um planejado exige motivo', async () => {
@@ -144,7 +196,7 @@ describe('procedimento não planejado em edição', () => {
     await usuario.type(await screen.findByLabelText('Evolução'), 'Atendimento de urgência.')
     await usuario.click(screen.getByRole('button', { name: 'Incluir procedimento não planejado' }))
     await usuario.selectOptions(await screen.findByLabelText('Procedimento'), 'Exodontia simples')
-    await usuario.selectOptions(screen.getByLabelText('Dente (FDI)'), '48')
+    await usuario.click(screen.getByRole('button', { name: 'Dente 48' }))
   }
 
   const envios = () =>

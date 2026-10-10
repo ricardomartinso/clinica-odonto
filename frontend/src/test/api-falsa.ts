@@ -482,6 +482,19 @@ const handlersDoProntuario = [
     }),
   ),
 
+  http.post<{ id: string }>(
+    '*/api/pacientes/:id/procedimentos/lote',
+    protegido<{ id: string }>(async ({ request, params, usuario }) => {
+      const negado = apenasDentista(usuario)
+      if (negado) return negado
+      const { procedimentos } = (await request.json()) as { procedimentos: DadosDoProcedimento[] }
+      const criados = procedimentos.map((dados) => criarProcedimento(params.id, dados))
+      const invalido = criados.find((c) => c instanceof Response)
+      if (invalido) return invalido as Response
+      return HttpResponse.json(criados, { status: 201 })
+    }),
+  ),
+
   http.post<{ id: string; pid: string; acao: string }>(
     '*/api/pacientes/:id/procedimentos/:pid/:acao',
     protegido<{ id: string; pid: string; acao: string }>(async ({ request, params }) => {

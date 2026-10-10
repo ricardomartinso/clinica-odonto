@@ -201,8 +201,11 @@ function RegistrarAtendimento() {
               <FormularioDeProcedimento
                 rotuloConfirmar="Incluir"
                 aoCancelar={fecharInclusao}
-                aoConfirmar={(dados, descricao) => {
-                  setNaoPlanejados((atual) => [...atual, { chave: Date.now(), dados, descricao }])
+                aoConfirmar={(itens) => {
+                  setNaoPlanejados((atual) => [
+                    ...atual,
+                    ...itens.map((item, i) => ({ chave: Date.now() + i, ...item })),
+                  ])
                   fecharInclusao()
                 }}
               />

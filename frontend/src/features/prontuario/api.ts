@@ -81,9 +81,13 @@ function useMutacaoDoProntuario<T, R>(pacienteId: string, executar: (variaveis: 
   })
 }
 
-export const usePlanejarProcedimento = (pacienteId: string) =>
-  useMutacaoDoProntuario(pacienteId, (dados: DadosDoProcedimento) =>
-    requisitar<ProcedimentoClinico>(`${base(pacienteId)}/procedimentos`, { method: 'POST', corpo: dados }),
+/** Um ou vários procedimentos, atomicamente (um item inválido não deixa o plano pela metade). */
+export const usePlanejarProcedimentos = (pacienteId: string) =>
+  useMutacaoDoProntuario(pacienteId, (procedimentos: DadosDoProcedimento[]) =>
+    requisitar<ProcedimentoClinico[]>(`${base(pacienteId)}/procedimentos/lote`, {
+      method: 'POST',
+      corpo: { procedimentos },
+    }),
   )
 
 export const useAlterarProcedimento = (pacienteId: string) =>

@@ -3,23 +3,24 @@ import { useQuery } from '@tanstack/react-query'
 import { useMemo } from 'react'
 import { Controller, useForm, useWatch } from 'react-hook-form'
 import { z } from 'zod'
-import type { DadosDoProcedimento, Face, ProcedimentoDoCatalogo } from '@/api/tipos'
+import type { Arcada, DadosDoProcedimento, Face, ProcedimentoDoCatalogo } from '@/api/tipos'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Field, FieldError, FieldGroup, FieldLabel, FieldLegend, FieldSet } from '@/components/ui/field'
 import { Input } from '@/components/ui/input'
-import { NativeSelect, NativeSelectOptGroup, NativeSelectOption } from '@/components/ui/native-select'
+import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select'
 import { Skeleton } from '@/components/ui/skeleton'
 import { aplicarErrosDaApi } from '@/lib/erros-formulario'
 import { consultaCatalogo } from './api'
-import { descreverLocal, FACES, nomeDaFace, QUADRANTES, ROTULO_ARCADA } from './dentes'
+import { descreverLocal, FACES, nomeDaFace, ROTULO_ARCADA } from './dentes'
+import { SeletorDeDentes } from './SeletorDeDentes'
 
 const esquemaBase = z.object({
   procedimentoId: z.string().min(1, 'Escolha o procedimento'),
-  dente: z.string(),
+  dentes: z.array(z.number()),
   faces: z.array(z.enum(['M', 'D', 'O_I', 'V', 'L_P'])),
-  arcada: z.enum(['', 'SUPERIOR', 'INFERIOR']),
+  arcada: z.enum(['', 'SUPERIOR', 'INFERIOR', 'AMBAS']),
   observacao: z.string().trim().max(500),
 })
 type Valores = z.infer<typeof esquemaBase>
@@ -28,8 +29,11 @@ type Valores = z.infer<typeof esquemaBase>
 function esquemaPara(catalogo: Map<string, ProcedimentoDoCatalogo>) {
   return esquemaBase.superRefine((v, ctx) => {
     const abrangencia = catalogo.get(v.procedimentoId)?.abrangencia
-    if ((abrangencia === 'FACE' || abrangencia === 'DENTE') && !v.dente) {
-      ctx.addIssue({ code: 'custom', path: ['dente'], message: 'Escolha o dente' })
+    if (abrangencia === 'FACE' && v.dentes.length !== 1) {
+      ctx.addIssue({ code: 'custom', path: ['dentes'], message: 'Escolha o dente' })
+    }
+    if (abrangencia === 'DENTE' && v.dentes.length === 0) {
+      ctx.addIssue({ code: 'custom', path: ['dentes'], message: 'Escolha ao menos um dente' })
     }
     if (abrangencia === 'FACE' && v.faces.length === 0) {
       ctx.addIssue({ code: 'custom', path: ['faces'], message: 'Marque ao menos uma face' })
@@ -40,12 +44,48 @@ function esquemaPara(catalogo: Map<string, ProcedimentoDoCatalogo>) {
   })
 }
 
-const vazio: Valores = { procedimentoId: '', dente: '', faces: [], arcada: '', observacao: '' }
+const vazio: Valores = { procedimentoId: '', dentes: [], faces: [], arcada: '', observacao: '' }
+
+export interface ItemDeProcedimento {
+  dados: DadosDoProcedimento
+  /** Descrição legível: "Selante · Dente 16". */
+  descricao: string
+}
+
+/**
+ * Uma escolha no formulário pode virar vários itens: um por dente (selante em 16, 26, 36 e 46) ou um
+ * por arcada ("ambas as arcadas"). Cada item segue independente no prontuário (pode ser realizado ou
+ * cancelado separadamente).
+ */
+function paraItens(procedimento: ProcedimentoDoCatalogo, v: Valores): ItemDeProcedimento[] {
+  const observacao = v.observacao || null
+  const item = (dente: number | null, faces: Face[], arcada: Arcada | null): ItemDeProcedimento => ({
+    dados: { procedimentoId: procedimento.id, dente, faces, arcada, observacao },
+    descricao: `${procedimento.nome} · ${descreverLocal(procedimento.abrangencia, dente, faces, arcada)}`,
+  })
+  switch (procedimento.abrangencia) {
+    case 'FACE':
+      return [
+        item(
+          v.dentes[0]!,
+          FACES.filter((f) => v.faces.includes(f)),
+          null,
+        ),
+      ]
+    case 'DENTE':
+      return v.dentes.map((dente) => item(dente, [], null))
+    case 'ARCADA': {
+      const arcadas: Arcada[] = v.arcada === 'AMBAS' ? ['SUPERIOR', 'INFERIOR'] : [v.arcada as Arcada]
+      return arcadas.map((arcada) => item(null, [], arcada))
+    }
+    case 'BOCA':
+      return [item(null, [], null)]
+  }
+}
 
 interface Props {
   rotuloConfirmar: string
-  /** Recebe os dados no formato da API e uma descrição legível ("Restauração · 16 · Mesial"). */
-  aoConfirmar: (dados: DadosDoProcedimento, descricao: string) => Promise<unknown> | void
+  aoConfirmar: (itens: ItemDeProcedimento[]) => Promise<unknown> | void
   aoCancelar?: () => void
 }
 
@@ -53,7 +93,10 @@ export function FormularioDeProcedimento({ rotuloConfirmar, aoConfirmar, aoCance
   const catalogo = useQuery(consultaCatalogo())
   const porId = useMemo(() => new Map((catalogo.data ?? []).map((p) => [p.id, p])), [catalogo.data])
   const form = useForm<Valores>({ resolver: zodResolver(esquemaPara(porId)), defaultValues: vazio })
-  const [procedimentoId, dente] = useWatch({ control: form.control, name: ['procedimentoId', 'dente'] })
+  const [procedimentoId, dentes, arcada] = useWatch({
+    control: form.control,
+    name: ['procedimentoId', 'dentes', 'arcada'],
+  })
   const abrangencia = porId.get(procedimentoId)?.abrangencia
 
   if (catalogo.isPending) return <Skeleton className="h-40 w-full" />
@@ -65,24 +108,12 @@ export function FormularioDeProcedimento({ rotuloConfirmar, aoConfirmar, aoCance
     )
   }
 
+  const quantidade =
+    abrangencia === 'DENTE' ? dentes.length : abrangencia === 'ARCADA' && arcada === 'AMBAS' ? 2 : 1
+
   const confirmar = form.handleSubmit(async (v) => {
-    const procedimento = porId.get(v.procedimentoId)!
-    const usaDente = procedimento.abrangencia === 'FACE' || procedimento.abrangencia === 'DENTE'
-    const dados: DadosDoProcedimento = {
-      procedimentoId: v.procedimentoId,
-      dente: usaDente ? Number(v.dente) : null,
-      faces: procedimento.abrangencia === 'FACE' ? v.faces : [],
-      arcada: procedimento.abrangencia === 'ARCADA' && v.arcada ? v.arcada : null,
-      observacao: v.observacao || null,
-    }
-    const local = descreverLocal(
-      procedimento.abrangencia,
-      dados.dente ?? null,
-      dados.faces ?? [],
-      dados.arcada ?? null,
-    )
     try {
-      await aoConfirmar(dados, `${procedimento.nome} · ${local}`)
+      await aoConfirmar(paraItens(porId.get(v.procedimentoId)!, v))
       form.reset(vazio)
     } catch (erro) {
       const mensagem = aplicarErrosDaApi(erro, form.setError)
@@ -119,6 +150,14 @@ export function FormularioDeProcedimento({ rotuloConfirmar, aoConfirmar, aoCance
                 className="w-full"
                 aria-invalid={fieldState.invalid}
                 {...field}
+                onChange={(e) => {
+                  // a localização depende do tipo de procedimento: recomeça ao trocar
+                  field.onChange(e.target.value)
+                  form.setValue('dentes', [])
+                  form.setValue('faces', [])
+                  form.setValue('arcada', '')
+                  form.clearErrors()
+                }}
               >
                 <NativeSelectOption value="">Selecione…</NativeSelectOption>
                 {catalogo.data.map((p) => (
@@ -135,22 +174,17 @@ export function FormularioDeProcedimento({ rotuloConfirmar, aoConfirmar, aoCance
         {(abrangencia === 'FACE' || abrangencia === 'DENTE') && (
           <Controller
             control={form.control}
-            name="dente"
+            name="dentes"
             render={({ field, fieldState }) => (
-              <Field data-invalid={fieldState.invalid}>
-                <FieldLabel htmlFor="dente">Dente (FDI)</FieldLabel>
-                <NativeSelect id="dente" className="w-full" aria-invalid={fieldState.invalid} {...field}>
-                  <NativeSelectOption value="">Selecione…</NativeSelectOption>
-                  {QUADRANTES.map((q) => (
-                    <NativeSelectOptGroup key={q.titulo} label={q.titulo}>
-                      {q.dentes.map((d) => (
-                        <NativeSelectOption key={d} value={String(d)}>
-                          {d}
-                        </NativeSelectOption>
-                      ))}
-                    </NativeSelectOptGroup>
-                  ))}
-                </NativeSelect>
+              <Field data-invalid={fieldState.invalid} className="sm:col-span-2">
+                <FieldLabel id="rotulo-dentes">{abrangencia === 'DENTE' ? 'Dentes' : 'Dente'}</FieldLabel>
+                <SeletorDeDentes
+                  idRotulo="rotulo-dentes"
+                  selecionados={field.value}
+                  aoMudar={field.onChange}
+                  multiplo={abrangencia === 'DENTE'}
+                  invalido={fieldState.invalid}
+                />
                 <FieldError errors={[fieldState.error]} />
               </Field>
             )}
@@ -171,6 +205,7 @@ export function FormularioDeProcedimento({ rotuloConfirmar, aoConfirmar, aoCance
                       {ROTULO_ARCADA[a]}
                     </NativeSelectOption>
                   ))}
+                  <NativeSelectOption value="AMBAS">Ambas as arcadas</NativeSelectOption>
                 </NativeSelect>
                 <FieldError errors={[fieldState.error]} />
               </Field>
@@ -196,7 +231,7 @@ export function FormularioDeProcedimento({ rotuloConfirmar, aoConfirmar, aoCance
                           )
                         }
                       />
-                      {nomeDaFace(face, dente ? Number(dente) : null)}
+                      {nomeDaFace(face, dentes[0] ?? null)}
                     </label>
                   ))}
                 </div>
@@ -227,7 +262,7 @@ export function FormularioDeProcedimento({ rotuloConfirmar, aoConfirmar, aoCance
           </Button>
         )}
         <Button type="button" onClick={confirmar} disabled={form.formState.isSubmitting}>
-          {rotuloConfirmar}
+          {quantidade > 1 ? `${rotuloConfirmar} (${quantidade})` : rotuloConfirmar}
         </Button>
       </div>
     </div>

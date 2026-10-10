@@ -7,13 +7,13 @@ import { Button } from '@/components/ui/button'
 import { Card, CardAction, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Skeleton } from '@/components/ui/skeleton'
-import { consultaProcedimentos, useAlterarProcedimento, usePlanejarProcedimento } from './api'
+import { consultaProcedimentos, useAlterarProcedimento, usePlanejarProcedimentos } from './api'
 import { FormularioDeProcedimento } from './FormularioDeProcedimento'
 import { MotivoDialog } from './MotivoDialog'
 
 export function PlanoDeTratamento({ pacienteId, editavel }: { pacienteId: string; editavel: boolean }) {
   const planejados = useQuery(consultaProcedimentos(pacienteId, ['PLANEJADO']))
-  const planejar = usePlanejarProcedimento(pacienteId)
+  const planejar = usePlanejarProcedimentos(pacienteId)
   const [planejando, setPlanejando] = useState(false)
 
   return (
@@ -56,9 +56,13 @@ export function PlanoDeTratamento({ pacienteId, editavel }: { pacienteId: string
           <FormularioDeProcedimento
             rotuloConfirmar="Adicionar ao plano"
             aoCancelar={() => setPlanejando(false)}
-            aoConfirmar={async (dados) => {
-              await planejar.mutateAsync(dados)
-              toast.success('Procedimento adicionado ao plano.')
+            aoConfirmar={async (itens) => {
+              await planejar.mutateAsync(itens.map((item) => item.dados))
+              toast.success(
+                itens.length > 1
+                  ? `${itens.length} procedimentos adicionados ao plano.`
+                  : 'Procedimento adicionado ao plano.',
+              )
               setPlanejando(false)
             }}
           />
