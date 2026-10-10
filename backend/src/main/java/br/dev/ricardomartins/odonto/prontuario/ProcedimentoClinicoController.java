@@ -39,6 +39,12 @@ class ProcedimentoClinicoController {
         return ResponseEntity.status(HttpStatus.CREATED).body(service.planejar(pacienteId, dados));
     }
 
+    @PostMapping("/api/pacientes/{pacienteId}/procedimentos/lote")
+    ResponseEntity<List<ProcedimentoClinicoResponse>> planejarEmLote(@PathVariable UUID pacienteId,
+            @Valid @RequestBody PlanejamentoEmLote lote) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(service.planejarEmLote(pacienteId, lote));
+    }
+
     @PostMapping("/api/pacientes/{pacienteId}/procedimentos/{id}/cancelar")
     ProcedimentoClinicoResponse cancelar(@PathVariable UUID pacienteId, @PathVariable UUID id,
             @Valid @RequestBody Justificativa justificativa) {

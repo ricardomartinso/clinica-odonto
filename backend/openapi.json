@@ -472,6 +472,20 @@
         "required" : [ "content", "page" ],
         "type" : "object"
       },
+      "PlanejamentoEmLote" : {
+        "properties" : {
+          "procedimentos" : {
+            "items" : {
+              "$ref" : "#/components/schemas/DadosDoProcedimento"
+            },
+            "maxItems" : 64,
+            "minItems" : 0,
+            "type" : "array"
+          }
+        },
+        "required" : [ "procedimentos" ],
+        "type" : "object"
+      },
       "ProcedimentoClinicoResponse" : {
         "properties" : {
           "arcada" : {
@@ -1251,6 +1265,46 @@
               "*/*" : {
                 "schema" : {
                   "$ref" : "#/components/schemas/ProcedimentoClinicoResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "procedimento-clinico-controller" ]
+      }
+    },
+    "/api/pacientes/{pacienteId}/procedimentos/lote" : {
+      "post" : {
+        "operationId" : "planejarEmLote",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "pacienteId",
+          "required" : true,
+          "schema" : {
+            "format" : "uuid",
+            "type" : "string"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/PlanejamentoEmLote"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "items" : {
+                    "$ref" : "#/components/schemas/ProcedimentoClinicoResponse"
+                  },
+                  "type" : "array"
                 }
               }
             },

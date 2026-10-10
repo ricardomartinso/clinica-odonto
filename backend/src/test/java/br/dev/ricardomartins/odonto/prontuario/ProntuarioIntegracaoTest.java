@@ -37,6 +37,7 @@ class ProntuarioIntegracaoTest extends TesteDeIntegracao {
     // IDs fixos do catálogo (migration V3)
     private static final String PROFILAXIA = "01920000-0000-7000-8000-000000000002"; // BOCA
     private static final String RASPAGEM = "01920000-0000-7000-8000-000000000006"; // ARCADA
+    private static final String SELANTE = "01920000-0000-7000-8000-000000000012"; // DENTE
     private static final String EXODONTIA = "01920000-0000-7000-8000-000000000013"; // DENTE
     private static final String RESTAURACAO = "01920000-0000-7000-8000-000000000019"; // FACE
 
@@ -130,6 +131,30 @@ class ProntuarioIntegracaoTest extends TesteDeIntegracao {
             planejar(procedimento(EXODONTIA, "19", null, null))
                     .andExpect(status().isBadRequest())
                     .andExpect(jsonPath("$.erros[0].campo").value("dente"));
+        }
+
+        @Test
+        void planejaVariosDeUmaVezDeFormaAtomica() throws Exception {
+            String selantes = lote(procedimento(SELANTE, "16", null, null), procedimento(SELANTE, "26", null, null),
+                    procedimento(SELANTE, "36", null, null), procedimento(SELANTE, "46", null, null));
+
+            enviar(post("/api/pacientes/{id}/procedimentos/lote", pacienteId), dentista, selantes)
+                    .andExpect(status().isCreated())
+                    .andExpect(jsonPath("$[*].local", contains("Dente 16", "Dente 26", "Dente 36", "Dente 46")));
+
+            // um item inválido (restauração sem faces) desfaz o lote inteiro
+            enviar(post("/api/pacientes/{id}/procedimentos/lote", pacienteId), dentista,
+                    lote(procedimento(RASPAGEM, null, null, "SUPERIOR"), procedimento(RESTAURACAO, "11", null, null)))
+                    .andExpect(status().isUnprocessableEntity());
+            mvc.perform(get("/api/pacientes/{id}/procedimentos", pacienteId).with(como(dentista)))
+                    .andExpect(jsonPath("$.length()").value(4));
+
+            enviar(post("/api/pacientes/{id}/procedimentos/lote", pacienteId), dentista, lote())
+                    .andExpect(status().isBadRequest());
+            enviar(post("/api/pacientes/{id}/procedimentos/lote", pacienteId), dentista,
+                    lote(procedimento(EXODONTIA, "19", null, null)))
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.erros[0].campo").value("procedimentos[0].dente"));
         }
 
         @Test
@@ -350,6 +375,10 @@ class ProntuarioIntegracaoTest extends TesteDeIntegracao {
         return """
                 {"procedimentoId": "%s", "dente": %s, "faces": %s, "arcada": %s}
                 """.formatted(procedimentoId, dente, faces, arcada == null ? null : "\"" + arcada + "\"");
+    }
+
+    private static String lote(String... procedimentos) {
+        return "{\"procedimentos\": [" + String.join(", ", procedimentos) + "]}";
     }
 
     private static String atendimento(String texto, String planejados, String novos) {

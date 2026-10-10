@@ -50,6 +50,14 @@ public class ProcedimentoClinicoService {
         return ProcedimentoClinicoResponse.de(procedimento);
     }
 
+    public List<ProcedimentoClinicoResponse> planejarEmLote(UUID pacienteId, PlanejamentoEmLote lote) {
+        exigirPacienteAtivo(pacienteId);
+        List<ProcedimentoClinico> planejados = lote.procedimentos().stream()
+                .map(dados -> fabrica.planejar(pacienteId, dados))
+                .toList();
+        return procedimentos.saveAllAndFlush(planejados).stream().map(ProcedimentoClinicoResponse::de).toList();
+    }
+
     public ProcedimentoClinicoResponse cancelar(UUID pacienteId, UUID id, Justificativa justificativa) {
         ProcedimentoClinico procedimento = carregar(pacienteId, id);
         procedimento.cancelar(justificativa.motivo().strip());
