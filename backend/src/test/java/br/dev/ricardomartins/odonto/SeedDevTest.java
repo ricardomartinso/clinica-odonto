@@ -24,6 +24,8 @@ class SeedDevTest extends TesteDeIntegracao {
     void seedRespeitaAsRegrasDoDominio() {
         assertThat(jdbc.queryForObject("select count(*) from paciente", Integer.class)).isEqualTo(30);
         assertThat(jdbc.queryForObject("select count(*) from anamnese", Integer.class)).isEqualTo(13);
+        assertThat(jdbc.queryForObject("select count(*) from evolucao_clinica", Integer.class)).isEqualTo(5);
+        assertThat(jdbc.queryForObject("select count(*) from procedimento_clinico", Integer.class)).isEqualTo(12);
 
         List<String> cpfs = jdbc.queryForList("""
                 select cpf from paciente where cpf is not null
