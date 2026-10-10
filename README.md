@@ -96,6 +96,15 @@ trazem `erros: [{campo, mensagem}]`, nunca o valor rejeitado.
 | POST   | `/api/pacientes/{id}/reativar`        | Reativa                                          | todos     |
 | GET    | `/api/pacientes/{id}/anamnese`        | Anamnese atual e alertas clínicos                | DENTISTA  |
 | PUT    | `/api/pacientes/{id}/anamnese`        | Cria (201) ou altera (200, exige `If-Match`)     | DENTISTA  |
+| GET    | `/api/procedimentos`                  | Catálogo de procedimentos                        | DENTISTA  |
+| GET    | `/api/pacientes/{id}/procedimentos?status=` | Plano de tratamento / histórico            | DENTISTA  |
+| POST   | `/api/pacientes/{id}/procedimentos`   | Planeja procedimento (dente FDI, faces, arcada)  | DENTISTA  |
+| POST   | `/api/pacientes/{id}/procedimentos/{pid}/cancelar` · `/anular` | Com motivo obrigatório | DENTISTA |
+| GET    | `/api/pacientes/{id}/evolucoes`       | Linha do tempo (paginada)                        | DENTISTA  |
+| POST   | `/api/pacientes/{id}/evolucoes`       | Registra atendimento: evolução + procedimentos, atômico | DENTISTA |
+| PUT    | `/api/pacientes/{id}/evolucoes/{eid}` | Edita (só o autor, exige `If-Match`)             | DENTISTA  |
+| POST   | `/api/pacientes/{id}/evolucoes/{eid}/anular` | Anula com motivo, em cascata (só o autor) | DENTISTA |
+| GET    | `/api/pacientes/{id}/evolucoes/{eid}/historico` | Versões registradas pelo Envers        | DENTISTA  |
 
 **Concorrência:** leituras devolvem `ETag` com a versão do registro. Alterações exigem `If-Match`
 com esse valor: sem o header a resposta é `428`, e com versão desatualizada é `412`. Assim uma edição
@@ -109,7 +118,8 @@ não sobrescreve outra em silêncio.
 backend/src/main/java/br/dev/ricardomartins/odonto/
 ├── shared/       erros (ProblemDetail), auditoria, value objects (Cpf), UUID v7
 ├── acesso/       usuários, papéis e Spring Security (sessão + CSRF)
-└── pacientes/    cadastro e anamnese (auditada com Hibernate Envers)
+├── pacientes/    cadastro e anamnese (auditada com Hibernate Envers)
+└── prontuario/   evolução clínica e procedimentos por dente/face (auditados)
 ```
 
 - As fronteiras entre módulos são verificadas em teste com Spring Modulith.
@@ -128,9 +138,9 @@ Decisões registradas:
 ## Próximas etapas
 
 - [x] Frontend: login, pacientes e anamnese
-- [ ] Agenda (consultas sem sobreposição garantida no banco)
-- [ ] Prontuário (evolução clínica e procedimentos por dente/face, auditados)
+- [x] Prontuário: plano de tratamento, atendimentos e evoluções auditadas
 - [ ] Odontograma (FDI, permanentes e decíduos)
+- [ ] Agenda (consultas sem sobreposição garantida no banco)
 
 ## Licença
 
