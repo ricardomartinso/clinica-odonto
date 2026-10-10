@@ -1,7 +1,8 @@
 import { useQuery, useSuspenseQuery } from '@tanstack/react-query'
-import { createFileRoute, Link } from '@tanstack/react-router'
+import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
 import { PencilIcon } from 'lucide-react'
 import { toast } from 'sonner'
+import { z } from 'zod'
 import type { PacienteResponse } from '@/api/tipos'
 import { ErroDeCarregamento } from '@/components/ErroDeCarregamento'
 import {
@@ -19,10 +20,12 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardAction, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { useUsuarioLogado } from '@/features/auth/api'
 import { AlertasClinicos } from '@/features/pacientes/AlertasClinicos'
 import { consultaAnamnese, consultaPaciente, useAlterarStatusPaciente } from '@/features/pacientes/api'
 import { NomeDoPaciente } from '@/features/pacientes/NomeDoPaciente'
+import { ProntuarioDoPaciente } from '@/features/prontuario/ProntuarioDoPaciente'
 import {
   formatarData,
   formatarDataHora,
@@ -33,6 +36,7 @@ import {
 } from '@/lib/formatos'
 
 export const Route = createFileRoute('/_app/pacientes/$pacienteId/')({
+  validateSearch: z.object({ aba: z.enum(['cadastro', 'prontuario']).optional().catch(undefined) }),
   loader: ({ context, params }) => context.queryClient.ensureQueryData(consultaPaciente(params.pacienteId)),
   errorComponent: ErroDeCarregamento,
   component: DetalheDoPaciente,
@@ -43,6 +47,8 @@ function DetalheDoPaciente() {
   const { data } = useSuspenseQuery(consultaPaciente(pacienteId))
   const paciente = data.dados
   const usuario = useUsuarioLogado()
+  const { aba } = Route.useSearch()
+  const navigate = useNavigate({ from: Route.fullPath })
 
   return (
     <div className="space-y-6">
@@ -69,76 +75,101 @@ function DetalheDoPaciente() {
         </div>
       </div>
 
-      {usuario.papel === 'DENTISTA' && <ResumoDaAnamnese pacienteId={pacienteId} ativo={paciente.ativo} />}
+      {usuario.papel === 'DENTISTA' ? (
+        <Tabs
+          value={aba ?? 'cadastro'}
+          onValueChange={(valor) =>
+            void navigate({ search: { aba: valor as 'cadastro' | 'prontuario' }, replace: true })
+          }
+        >
+          <TabsList>
+            <TabsTrigger value="cadastro">Cadastro</TabsTrigger>
+            <TabsTrigger value="prontuario">Prontuário</TabsTrigger>
+          </TabsList>
+          <TabsContent value="cadastro" className="space-y-4 pt-2">
+            <ResumoDaAnamnese pacienteId={pacienteId} ativo={paciente.ativo} />
+            <Cadastro paciente={paciente} />
+          </TabsContent>
+          <TabsContent value="prontuario" className="pt-2">
+            <ProntuarioDoPaciente pacienteId={pacienteId} ativo={paciente.ativo} />
+          </TabsContent>
+        </Tabs>
+      ) : (
+        <Cadastro paciente={paciente} />
+      )}
+    </div>
+  )
+}
 
-      <div className="grid gap-4 md:grid-cols-2">
+function Cadastro({ paciente }: { paciente: PacienteResponse }) {
+  return (
+    <div className="grid gap-4 md:grid-cols-2">
+      <Card>
+        <CardHeader>
+          <CardTitle>Dados pessoais</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <Dados
+            itens={[
+              ['CPF', paciente.cpf ? mascararCpf(paciente.cpf) : null],
+              ['Celular', mascararTelefone(paciente.celular)],
+              ['E-mail', paciente.email],
+            ]}
+          />
+        </CardContent>
+      </Card>
+      <Card>
+        <CardHeader>
+          <CardTitle>Endereço</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {paciente.endereco ? (
+            <Dados
+              itens={[
+                ['CEP', paciente.endereco.cep ? mascararCep(paciente.endereco.cep) : null],
+                [
+                  'Logradouro',
+                  [paciente.endereco.logradouro, paciente.endereco.numero, paciente.endereco.complemento]
+                    .filter(Boolean)
+                    .join(', ') || null,
+                ],
+                ['Bairro', paciente.endereco.bairro ?? null],
+                [
+                  'Cidade',
+                  [paciente.endereco.cidade, paciente.endereco.uf].filter(Boolean).join(' / ') || null,
+                ],
+              ]}
+            />
+          ) : (
+            <p className="text-sm text-muted-foreground">Não informado.</p>
+          )}
+        </CardContent>
+      </Card>
+      {paciente.responsavel && (
         <Card>
           <CardHeader>
-            <CardTitle>Dados pessoais</CardTitle>
+            <CardTitle>Responsável legal</CardTitle>
           </CardHeader>
           <CardContent>
             <Dados
               itens={[
-                ['CPF', paciente.cpf ? mascararCpf(paciente.cpf) : null],
-                ['Celular', mascararTelefone(paciente.celular)],
-                ['E-mail', paciente.email],
+                ['Nome', paciente.responsavel.nome],
+                ['Parentesco', paciente.responsavel.parentesco ?? null],
+                ['CPF', paciente.responsavel.cpf ? mascararCpf(paciente.responsavel.cpf) : null],
+                ['Telefone', mascararTelefone(paciente.responsavel.telefone)],
               ]}
             />
           </CardContent>
         </Card>
+      )}
+      {paciente.observacoes && (
         <Card>
           <CardHeader>
-            <CardTitle>Endereço</CardTitle>
+            <CardTitle>Observações</CardTitle>
           </CardHeader>
-          <CardContent>
-            {paciente.endereco ? (
-              <Dados
-                itens={[
-                  ['CEP', paciente.endereco.cep ? mascararCep(paciente.endereco.cep) : null],
-                  [
-                    'Logradouro',
-                    [paciente.endereco.logradouro, paciente.endereco.numero, paciente.endereco.complemento]
-                      .filter(Boolean)
-                      .join(', ') || null,
-                  ],
-                  ['Bairro', paciente.endereco.bairro ?? null],
-                  [
-                    'Cidade',
-                    [paciente.endereco.cidade, paciente.endereco.uf].filter(Boolean).join(' / ') || null,
-                  ],
-                ]}
-              />
-            ) : (
-              <p className="text-sm text-muted-foreground">Não informado.</p>
-            )}
-          </CardContent>
+          <CardContent className="text-sm whitespace-pre-line">{paciente.observacoes}</CardContent>
         </Card>
-        {paciente.responsavel && (
-          <Card>
-            <CardHeader>
-              <CardTitle>Responsável legal</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <Dados
-                itens={[
-                  ['Nome', paciente.responsavel.nome],
-                  ['Parentesco', paciente.responsavel.parentesco ?? null],
-                  ['CPF', paciente.responsavel.cpf ? mascararCpf(paciente.responsavel.cpf) : null],
-                  ['Telefone', mascararTelefone(paciente.responsavel.telefone)],
-                ]}
-              />
-            </CardContent>
-          </Card>
-        )}
-        {paciente.observacoes && (
-          <Card>
-            <CardHeader>
-              <CardTitle>Observações</CardTitle>
-            </CardHeader>
-            <CardContent className="text-sm whitespace-pre-line">{paciente.observacoes}</CardContent>
-          </Card>
-        )}
-      </div>
+      )}
     </div>
   )
 }

@@ -5,6 +5,12 @@ import type {
   AnamneseResponse,
   DadosDaAnamnese,
   DadosDoPaciente,
+  DadosDoProcedimento,
+  Evolucao,
+  ProcedimentoClinico,
+  ProcedimentoDoCatalogo,
+  RegistroDeAtendimento,
+  VersaoDaEvolucao,
   PacienteResponse,
   PacienteResumo,
   Papel,
@@ -34,6 +40,11 @@ const estado = {
   sessao: null as UsuarioLogado | null,
   pacientes: new Map<string, Registro<PacienteResponse>>(),
   anamneses: new Map<string, Registro<AnamneseResponse>>(),
+  procedimentos: new Map<string, ProcedimentoClinico>(),
+  evolucoes: new Map<string, Registro<Evolucao>>(),
+  historicos: new Map<string, VersaoDaEvolucao[]>(),
+  /** procedimento/evolução → paciente (as respostas da API não carregam o pacienteId). */
+  pacienteDoRegistro: new Map<string, string>(),
   /** Últimos corpos recebidos, para os testes inspecionarem o que a UI enviou. */
   recebidos: [] as { metodo: string; caminho: string; corpo: unknown; ifMatch: string | null }[],
 }
@@ -68,11 +79,34 @@ export const apiFalsa = {
     registro.versao++
   },
   paciente: (id: string) => estado.pacientes.get(id)?.dados,
+  definirAnamnese(pacienteId: string, alertas: AlertaClinico[]) {
+    estado.anamneses.set(pacienteId, {
+      versao: 0,
+      dados: { pacienteId, respostas: {}, alertas, atualizadaEm: '2026-10-01T14:30:00Z' },
+    })
+  },
+  planejar(pacienteId: string, procedimentoId: string, local: Partial<DadosDoProcedimento> = {}) {
+    return criarProcedimento(pacienteId, { procedimentoId, ...local })
+  },
+  registrarEvolucao(
+    pacienteId: string,
+    texto: string,
+    autor: Papel | UsuarioLogado = 'DENTISTA',
+    data = '2026-09-01',
+  ) {
+    const usuario = typeof autor === 'string' ? USUARIOS[autor] : autor
+    return criarEvolucao(pacienteId, usuario, { dataAtendimento: data, texto })
+  },
+  procedimento: (id: string) => estado.procedimentos.get(id),
   recebidos: () => estado.recebidos,
   resetar() {
     estado.sessao = null
     estado.pacientes.clear()
     estado.anamneses.clear()
+    estado.procedimentos.clear()
+    estado.evolucoes.clear()
+    estado.historicos.clear()
+    estado.pacienteDoRegistro.clear()
     estado.recebidos = []
   },
 }
@@ -259,14 +293,16 @@ export const handlers = [
     }),
   ),
 
-  http.post<{ id: string; acao: string }>(
-    '*/api/pacientes/:id/:acao',
-    protegido<{ id: string; acao: string }>(({ params }) => {
-      const registro = estado.pacientes.get(params.id)!
-      registro.dados = { ...registro.dados, ativo: params.acao === 'reativar' }
-      registro.versao++
-      return new HttpResponse(null, { status: 204 })
-    }),
+  ...(['inativar', 'reativar'] as const).map((acao) =>
+    http.post<{ id: string }>(
+      `*/api/pacientes/:id/${acao}`,
+      protegido<{ id: string }>(({ params }) => {
+        const registro = estado.pacientes.get(params.id)!
+        registro.dados = { ...registro.dados, ativo: acao === 'reativar' }
+        registro.versao++
+        return new HttpResponse(null, { status: 204 })
+      }),
+    ),
   ),
 
   http.get<{ id: string }>(
@@ -326,4 +362,253 @@ function normalizar(
   }
 }
 
-export const servidor = setupServer(...handlers)
+export const CATALOGO: ProcedimentoDoCatalogo[] = [
+  { id: 'c-profilaxia', nome: 'Profilaxia (limpeza)', abrangencia: 'BOCA' },
+  { id: 'c-raspagem', nome: 'Raspagem supragengival', abrangencia: 'ARCADA' },
+  { id: 'c-exodontia', nome: 'Exodontia simples', abrangencia: 'DENTE' },
+  { id: 'c-restauracao', nome: 'Restauração em resina composta', abrangencia: 'FACE' },
+]
+
+const NOMES_FACE = { M: 'Mesial', D: 'Distal', V: 'Vestibular' } as const
+
+function local(p: Pick<ProcedimentoClinico, 'dente' | 'faces' | 'arcada'>, abrangencia: string) {
+  const d = p.dente ?? 0
+  const nome = (f: ProcedimentoClinico['faces'][number]) =>
+    f === 'O_I'
+      ? d % 10 <= 3
+        ? 'Incisal'
+        : 'Oclusal'
+      : f === 'L_P'
+        ? [1, 2, 5, 6].includes(Math.floor(d / 10))
+          ? 'Palatina'
+          : 'Lingual'
+        : NOMES_FACE[f]
+  if (abrangencia === 'FACE') return `${d} · ${p.faces.map(nome).join(', ')}`
+  if (abrangencia === 'DENTE') return `Dente ${d}`
+  if (abrangencia === 'ARCADA') return p.arcada === 'SUPERIOR' ? 'Arcada superior' : 'Arcada inferior'
+  return 'Boca toda'
+}
+
+function criarProcedimento(pacienteId: string, dados: DadosDoProcedimento): ProcedimentoClinico | Response {
+  const catalogo = CATALOGO.find((c) => c.id === dados.procedimentoId)!
+  const faces = dados.faces ?? []
+  if (catalogo.abrangencia === 'FACE' && (!dados.dente || faces.length === 0)) {
+    return problema(422, 'Regra de negócio violada', 'Este procedimento exige o dente e ao menos uma face.')
+  }
+  const base = { dente: dados.dente ?? null, faces, arcada: dados.arcada ?? null }
+  const procedimento: ProcedimentoClinico = {
+    id: `proc-${estado.procedimentos.size + 1}`,
+    procedimento: catalogo,
+    ...base,
+    local: local(base, catalogo.abrangencia),
+    status: 'PLANEJADO',
+    observacao: dados.observacao ?? null,
+    evolucaoId: null,
+    realizadoEm: null,
+    motivo: null,
+    criadoEm: '2026-09-01T12:00:00Z',
+  }
+  estado.procedimentos.set(procedimento.id, procedimento)
+  estado.pacienteDoRegistro.set(procedimento.id, pacienteId)
+  return procedimento
+}
+
+function criarEvolucao(
+  pacienteId: string,
+  autor: UsuarioLogado,
+  dados: Pick<RegistroDeAtendimento, 'dataAtendimento' | 'texto'>,
+) {
+  const id = `ev-${estado.evolucoes.size + 1}`
+  const evolucao: Evolucao = {
+    id,
+    dataAtendimento: dados.dataAtendimento,
+    texto: dados.texto,
+    autor: { id: autor.id, nome: autor.nome },
+    editadaEm: null,
+    anulacao: null,
+    procedimentosRealizados: [],
+    criadoEm: `2026-09-01T12:00:${String(estado.evolucoes.size).padStart(2, '0')}Z`,
+  }
+  estado.evolucoes.set(id, { dados: evolucao, versao: 0 })
+  estado.historicos.set(id, [versao(evolucao, autor, 'CRIACAO')])
+  estado.pacienteDoRegistro.set(id, pacienteId)
+  return evolucao
+}
+
+function versao(e: Evolucao, por: UsuarioLogado, tipo: VersaoDaEvolucao['tipo']): VersaoDaEvolucao {
+  return {
+    revisao: (estado.historicos.get(e.id)?.length ?? 0) + 1,
+    momento: '2026-09-01T12:00:00Z',
+    alteradaPor: { id: por.id, nome: por.nome },
+    tipo,
+    dataAtendimento: e.dataAtendimento,
+    texto: e.texto,
+  }
+}
+
+const doPaciente = (pacienteId: string) =>
+  [...estado.procedimentos.values()].filter((p) => estado.pacienteDoRegistro.get(p.id) === pacienteId)
+
+function apenasDentista(usuario: UsuarioLogado) {
+  return usuario.papel === 'DENTISTA' ? null : problema(403, 'Acesso negado', 'Sem permissão.')
+}
+
+const handlersDoProntuario = [
+  http.get(
+    '*/api/procedimentos',
+    protegido(({ usuario }) => apenasDentista(usuario) ?? HttpResponse.json(CATALOGO)),
+  ),
+
+  http.get<{ id: string }>(
+    '*/api/pacientes/:id/procedimentos',
+    protegido<{ id: string }>(({ request, params, usuario }) => {
+      const negado = apenasDentista(usuario)
+      if (negado) return negado
+      const status = new URL(request.url).searchParams.getAll('status')
+      return HttpResponse.json(
+        doPaciente(params.id).filter((p) => status.length === 0 || status.includes(p.status)),
+      )
+    }),
+  ),
+
+  http.post<{ id: string }>(
+    '*/api/pacientes/:id/procedimentos',
+    protegido<{ id: string }>(async ({ request, params, usuario }) => {
+      const negado = apenasDentista(usuario)
+      if (negado) return negado
+      const criado = criarProcedimento(params.id, (await request.json()) as DadosDoProcedimento)
+      if (criado instanceof Response) return criado
+      return HttpResponse.json(criado, { status: 201 })
+    }),
+  ),
+
+  http.post<{ id: string; pid: string; acao: string }>(
+    '*/api/pacientes/:id/procedimentos/:pid/:acao',
+    protegido<{ id: string; pid: string; acao: string }>(async ({ request, params }) => {
+      const p = estado.procedimentos.get(params.pid)!
+      const { motivo } = (await request.json()) as { motivo: string }
+      const atualizado = {
+        ...p,
+        status: params.acao === 'cancelar' ? 'CANCELADO' : 'ANULADO',
+        motivo,
+      } as ProcedimentoClinico
+      estado.procedimentos.set(p.id, atualizado)
+      return HttpResponse.json(atualizado)
+    }),
+  ),
+
+  http.get<{ id: string }>(
+    '*/api/pacientes/:id/evolucoes',
+    protegido<{ id: string }>(({ request, params, usuario }) => {
+      const negado = apenasDentista(usuario)
+      if (negado) return negado
+      const url = new URL(request.url)
+      const pagina = Number(url.searchParams.get('pagina') ?? 0)
+      const tamanho = Number(url.searchParams.get('tamanho') ?? 10)
+      const todas = [...estado.evolucoes.values()]
+        .map((r) => r.dados)
+        .filter((e) => estado.pacienteDoRegistro.get(e.id) === params.id)
+        .sort(
+          (a, b) =>
+            b.dataAtendimento.localeCompare(a.dataAtendimento) || b.criadoEm.localeCompare(a.criadoEm),
+        )
+      return HttpResponse.json({
+        content: todas.slice(pagina * tamanho, (pagina + 1) * tamanho),
+        page: {
+          size: tamanho,
+          number: pagina,
+          totalElements: todas.length,
+          totalPages: Math.ceil(todas.length / tamanho),
+        },
+      })
+    }),
+  ),
+
+  http.post<{ id: string }>(
+    '*/api/pacientes/:id/evolucoes',
+    protegido<{ id: string }>(async ({ request, params, usuario }) => {
+      const negado = apenasDentista(usuario)
+      if (negado) return negado
+      const registro = (await request.json()) as RegistroDeAtendimento
+      const planejados = (registro.procedimentosRealizados ?? []).map((pid) => estado.procedimentos.get(pid))
+      if (planejados.some((p) => !p || p.status !== 'PLANEJADO')) {
+        return problema(
+          422,
+          'Regra de negócio violada',
+          'Somente procedimentos planejados podem ser realizados.',
+        )
+      }
+      const novos = (registro.novosProcedimentos ?? []).map((dados) => criarProcedimento(params.id, dados))
+      const invalido = novos.find((n) => n instanceof Response)
+      if (invalido) return invalido as Response
+      const evolucao = criarEvolucao(params.id, usuario, registro)
+      evolucao.procedimentosRealizados = [...planejados, ...novos].map((p) => {
+        const realizado = {
+          ...(p as ProcedimentoClinico),
+          status: 'REALIZADO' as const,
+          evolucaoId: evolucao.id,
+          realizadoEm: registro.dataAtendimento,
+        }
+        estado.procedimentos.set(realizado.id, realizado)
+        return realizado
+      })
+      return HttpResponse.json(evolucao, { status: 201, headers: etag(0) })
+    }),
+  ),
+
+  http.get<{ id: string; eid: string }>(
+    '*/api/pacientes/:id/evolucoes/:eid',
+    protegido<{ id: string; eid: string }>(({ params }) => {
+      const registro = estado.evolucoes.get(params.eid)!
+      return HttpResponse.json(registro.dados, { headers: etag(registro.versao) })
+    }),
+  ),
+
+  http.put<{ id: string; eid: string }>(
+    '*/api/pacientes/:id/evolucoes/:eid',
+    protegido<{ id: string; eid: string }>(async ({ request, params, usuario }) => {
+      const registro = estado.evolucoes.get(params.eid)!
+      if (registro.dados.autor.id !== usuario.id) {
+        return problema(403, 'Acesso negado', 'Somente o autor pode editar esta evolução.')
+      }
+      const conflito = conferirVersao(request.headers.get('If-Match'), registro.versao)
+      if (conflito) return conflito
+      const edicao = (await request.json()) as Pick<Evolucao, 'dataAtendimento' | 'texto'>
+      registro.dados = { ...registro.dados, ...edicao, editadaEm: '2026-09-02T10:00:00Z' }
+      registro.versao++
+      estado.historicos.get(params.eid)!.push(versao(registro.dados, usuario, 'EDICAO'))
+      return HttpResponse.json(registro.dados, { headers: etag(registro.versao) })
+    }),
+  ),
+
+  http.post<{ id: string; eid: string }>(
+    '*/api/pacientes/:id/evolucoes/:eid/anular',
+    protegido<{ id: string; eid: string }>(async ({ request, params, usuario }) => {
+      const registro = estado.evolucoes.get(params.eid)!
+      const { motivo } = (await request.json()) as { motivo: string }
+      const anulados = registro.dados.procedimentosRealizados.map((p) => ({
+        ...p,
+        status: 'ANULADO' as const,
+        motivo,
+      }))
+      anulados.forEach((p) => estado.procedimentos.set(p.id, p))
+      registro.dados = {
+        ...registro.dados,
+        procedimentosRealizados: anulados,
+        anulacao: { em: '2026-09-02T10:00:00Z', por: { id: usuario.id, nome: usuario.nome }, motivo },
+      }
+      registro.versao++
+      estado.historicos.get(params.eid)!.push(versao(registro.dados, usuario, 'ANULACAO'))
+      return HttpResponse.json(registro.dados)
+    }),
+  ),
+
+  http.get<{ id: string; eid: string }>(
+    '*/api/pacientes/:id/evolucoes/:eid/historico',
+    protegido<{ id: string; eid: string }>(({ params }) =>
+      HttpResponse.json(estado.historicos.get(params.eid)),
+    ),
+  ),
+]
+
+export const servidor = setupServer(...handlersDoProntuario, ...handlers)

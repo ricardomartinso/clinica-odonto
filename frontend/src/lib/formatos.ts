@@ -61,3 +61,10 @@ export function idadeEm(isoDataNascimento: string, hoje: Date = new Date()): num
   if (aindaNaoFezAniversario) idade--
   return idade
 }
+
+/** Data de hoje (fuso local do navegador) no formato ISO usado pela API: "2026-10-09". */
+export function hojeIso(): string {
+  const hoje = new Date()
+  const doisDigitos = (n: number) => String(n).padStart(2, '0')
+  return `${hoje.getFullYear()}-${doisDigitos(hoje.getMonth() + 1)}-${doisDigitos(hoje.getDate())}`
+}

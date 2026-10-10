@@ -16,6 +16,7 @@ import { Route as AppPacientesIndexRouteImport } from './routes/_app/pacientes/i
 import { Route as AppPacientesNovoRouteImport } from './routes/_app/pacientes/novo'
 import { Route as AppPacientesPacienteIdIndexRouteImport } from './routes/_app/pacientes/$pacienteId/index'
 import { Route as AppPacientesPacienteIdAnamneseRouteImport } from './routes/_app/pacientes/$pacienteId/anamnese'
+import { Route as AppPacientesPacienteIdAtendimentoRouteImport } from './routes/_app/pacientes/$pacienteId/atendimento'
 import { Route as AppPacientesPacienteIdEditarRouteImport } from './routes/_app/pacientes/$pacienteId/editar'
 
 const AppRoute = AppRouteImport.update({
@@ -54,6 +55,12 @@ const AppPacientesPacienteIdAnamneseRoute =
     path: '/pacientes/$pacienteId/anamnese',
     getParentRoute: () => AppRoute,
   } as any)
+const AppPacientesPacienteIdAtendimentoRoute =
+  AppPacientesPacienteIdAtendimentoRouteImport.update({
+    id: '/pacientes/$pacienteId/atendimento',
+    path: '/pacientes/$pacienteId/atendimento',
+    getParentRoute: () => AppRoute,
+  } as any)
 const AppPacientesPacienteIdEditarRoute =
   AppPacientesPacienteIdEditarRouteImport.update({
     id: '/pacientes/$pacienteId/editar',
@@ -67,6 +74,7 @@ export interface FileRoutesByFullPath {
   '/pacientes/novo': typeof AppPacientesNovoRoute
   '/pacientes/': typeof AppPacientesIndexRoute
   '/pacientes/$pacienteId/anamnese': typeof AppPacientesPacienteIdAnamneseRoute
+  '/pacientes/$pacienteId/atendimento': typeof AppPacientesPacienteIdAtendimentoRoute
   '/pacientes/$pacienteId/editar': typeof AppPacientesPacienteIdEditarRoute
   '/pacientes/$pacienteId/': typeof AppPacientesPacienteIdIndexRoute
 }
@@ -76,6 +84,7 @@ export interface FileRoutesByTo {
   '/pacientes/novo': typeof AppPacientesNovoRoute
   '/pacientes': typeof AppPacientesIndexRoute
   '/pacientes/$pacienteId/anamnese': typeof AppPacientesPacienteIdAnamneseRoute
+  '/pacientes/$pacienteId/atendimento': typeof AppPacientesPacienteIdAtendimentoRoute
   '/pacientes/$pacienteId/editar': typeof AppPacientesPacienteIdEditarRoute
   '/pacientes/$pacienteId': typeof AppPacientesPacienteIdIndexRoute
 }
@@ -87,6 +96,7 @@ export interface FileRoutesById {
   '/_app/pacientes/novo': typeof AppPacientesNovoRoute
   '/_app/pacientes/': typeof AppPacientesIndexRoute
   '/_app/pacientes/$pacienteId/anamnese': typeof AppPacientesPacienteIdAnamneseRoute
+  '/_app/pacientes/$pacienteId/atendimento': typeof AppPacientesPacienteIdAtendimentoRoute
   '/_app/pacientes/$pacienteId/editar': typeof AppPacientesPacienteIdEditarRoute
   '/_app/pacientes/$pacienteId/': typeof AppPacientesPacienteIdIndexRoute
 }
@@ -98,6 +108,7 @@ export interface FileRouteTypes {
     | '/pacientes/novo'
     | '/pacientes/'
     | '/pacientes/$pacienteId/anamnese'
+    | '/pacientes/$pacienteId/atendimento'
     | '/pacientes/$pacienteId/editar'
     | '/pacientes/$pacienteId/'
   fileRoutesByTo: FileRoutesByTo
@@ -107,6 +118,7 @@ export interface FileRouteTypes {
     | '/pacientes/novo'
     | '/pacientes'
     | '/pacientes/$pacienteId/anamnese'
+    | '/pacientes/$pacienteId/atendimento'
     | '/pacientes/$pacienteId/editar'
     | '/pacientes/$pacienteId'
   id:
@@ -117,6 +129,7 @@ export interface FileRouteTypes {
     | '/_app/pacientes/novo'
     | '/_app/pacientes/'
     | '/_app/pacientes/$pacienteId/anamnese'
+    | '/_app/pacientes/$pacienteId/atendimento'
     | '/_app/pacientes/$pacienteId/editar'
     | '/_app/pacientes/$pacienteId/'
   fileRoutesById: FileRoutesById
@@ -177,6 +190,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppPacientesPacienteIdAnamneseRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/pacientes/$pacienteId/atendimento': {
+      id: '/_app/pacientes/$pacienteId/atendimento'
+      path: '/pacientes/$pacienteId/atendimento'
+      fullPath: '/pacientes/$pacienteId/atendimento'
+      preLoaderRoute: typeof AppPacientesPacienteIdAtendimentoRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/_app/pacientes/$pacienteId/editar': {
       id: '/_app/pacientes/$pacienteId/editar'
       path: '/pacientes/$pacienteId/editar'
@@ -192,6 +212,7 @@ interface AppRouteChildren {
   AppPacientesNovoRoute: typeof AppPacientesNovoRoute
   AppPacientesIndexRoute: typeof AppPacientesIndexRoute
   AppPacientesPacienteIdAnamneseRoute: typeof AppPacientesPacienteIdAnamneseRoute
+  AppPacientesPacienteIdAtendimentoRoute: typeof AppPacientesPacienteIdAtendimentoRoute
   AppPacientesPacienteIdEditarRoute: typeof AppPacientesPacienteIdEditarRoute
   AppPacientesPacienteIdIndexRoute: typeof AppPacientesPacienteIdIndexRoute
 }
@@ -201,6 +222,8 @@ const AppRouteChildren: AppRouteChildren = {
   AppPacientesNovoRoute: AppPacientesNovoRoute,
   AppPacientesIndexRoute: AppPacientesIndexRoute,
   AppPacientesPacienteIdAnamneseRoute: AppPacientesPacienteIdAnamneseRoute,
+  AppPacientesPacienteIdAtendimentoRoute:
+    AppPacientesPacienteIdAtendimentoRoute,
   AppPacientesPacienteIdEditarRoute: AppPacientesPacienteIdEditarRoute,
   AppPacientesPacienteIdIndexRoute: AppPacientesPacienteIdIndexRoute,
 }

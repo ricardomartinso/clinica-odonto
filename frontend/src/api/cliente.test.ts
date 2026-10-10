@@ -19,6 +19,23 @@ describe('requisitar', () => {
     expect(resposta.dados).toBeUndefined()
   })
 
+  it('usa sempre o token CSRF atual do cookie (o backend o renova no login)', async () => {
+    const recebidos: (string | null)[] = []
+    servidor.use(
+      http.post('*/api/teste', ({ request }) => {
+        recebidos.push(request.headers.get('X-XSRF-TOKEN'))
+        return new HttpResponse(null, { status: 204 })
+      }),
+    )
+
+    document.cookie = 'XSRF-TOKEN=antes-do-login; path=/'
+    await requisitar<void>('/api/teste', { method: 'POST' })
+    document.cookie = 'XSRF-TOKEN=depois-do-login; path=/'
+    await requisitar<void>('/api/teste', { method: 'POST' })
+
+    expect(recebidos).toEqual(['antes-do-login', 'depois-do-login'])
+  })
+
   it('devolve o ETag junto com os dados', async () => {
     servidor.use(http.get('*/api/teste', () => HttpResponse.json({ ok: true }, { headers: { ETag: '"3"' } })))
 

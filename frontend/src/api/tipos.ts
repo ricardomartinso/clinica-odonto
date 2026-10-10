@@ -23,3 +23,16 @@ export interface ProblemDetail {
   instance?: string
   erros?: { campo: string; mensagem: string }[]
 }
+
+export type ProcedimentoDoCatalogo = Schemas['ProcedimentoDoCatalogo']
+export type Abrangencia = ProcedimentoDoCatalogo['abrangencia']
+export type ProcedimentoClinico = Schemas['ProcedimentoClinicoResponse']
+export type StatusProcedimento = ProcedimentoClinico['status']
+export type Face = ProcedimentoClinico['faces'][number]
+export type Arcada = NonNullable<ProcedimentoClinico['arcada']>
+export type DadosDoProcedimento = Schemas['DadosDoProcedimento']
+export type RegistroDeAtendimento = Schemas['RegistroDeAtendimento']
+export type EdicaoDeEvolucao = Schemas['EdicaoDeEvolucao']
+export type Evolucao = Schemas['EvolucaoResponse']
+export type PaginaDeEvolucoes = Schemas['PagedModelEvolucaoResponse']
+export type VersaoDaEvolucao = Schemas['VersaoDaEvolucao']

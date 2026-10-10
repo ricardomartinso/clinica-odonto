@@ -59,7 +59,7 @@ export interface paths {
       path?: never
       cookie?: never
     }
-    get: operations['buscar_1']
+    get: operations['buscar_2']
     put: operations['atualizar']
     post?: never
     delete?: never
@@ -107,8 +107,136 @@ export interface paths {
       path?: never
       cookie?: never
     }
-    get: operations['buscar']
+    get: operations['buscar_1']
     put: operations['gravar']
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/api/pacientes/{pacienteId}/evolucoes': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get: operations['listar_1']
+    put?: never
+    post: operations['registrar']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/api/pacientes/{pacienteId}/evolucoes/{id}': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get: operations['buscar']
+    put: operations['editar']
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/api/pacientes/{pacienteId}/evolucoes/{id}/anular': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    post: operations['anular_1']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/api/pacientes/{pacienteId}/evolucoes/{id}/historico': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get: operations['historico']
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/api/pacientes/{pacienteId}/procedimentos': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get: operations['listar']
+    put?: never
+    post: operations['planejar']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/api/pacientes/{pacienteId}/procedimentos/{id}/anular': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    post: operations['anular']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/api/pacientes/{pacienteId}/procedimentos/{id}/cancelar': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    post: operations['cancelar']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/api/procedimentos': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get: operations['catalogo']
+    put?: never
     post?: never
     delete?: never
     options?: never
@@ -137,6 +265,17 @@ export interface components {
       /** Format: uuid */
       pacienteId: string
       respostas: components['schemas']['DadosDaAnamnese']
+    }
+    Anulacao: {
+      /** Format: date-time */
+      em: string
+      motivo: string
+      por: components['schemas']['Autor']
+    }
+    Autor: {
+      /** Format: uuid */
+      id: string
+      nome: string
     }
     DadosDaAnamnese: {
       alergiasDescricao?: string | null
@@ -168,6 +307,16 @@ export interface components {
       observacoes?: string | null
       responsavel?: components['schemas']['DadosResponsavel'] | null
     }
+    DadosDoProcedimento: {
+      /** @enum {string|null} */
+      arcada?: 'SUPERIOR' | 'INFERIOR' | null
+      /** Format: int32 */
+      dente?: number | null
+      faces?: ('M' | 'D' | 'O_I' | 'V' | 'L_P')[] | null
+      observacao?: string | null
+      /** Format: uuid */
+      procedimentoId: string
+    }
     DadosEndereco: {
       bairro?: string | null
       cep?: string | null
@@ -182,6 +331,28 @@ export interface components {
       nome: string
       parentesco?: string | null
       telefone: string
+    }
+    EdicaoDeEvolucao: {
+      /** Format: date */
+      dataAtendimento: string
+      texto: string
+    }
+    EvolucaoResponse: {
+      anulacao: components['schemas']['Anulacao'] | null
+      autor: components['schemas']['Autor']
+      /** Format: date-time */
+      criadoEm: string
+      /** Format: date */
+      dataAtendimento: string
+      /** Format: date-time */
+      editadaEm: string | null
+      /** Format: uuid */
+      id: string
+      procedimentosRealizados: components['schemas']['ProcedimentoClinicoResponse'][]
+      texto: string
+    }
+    Justificativa: {
+      motivo: string
     }
     LoginRequest: {
       email: string
@@ -226,9 +397,48 @@ export interface components {
       /** Format: int64 */
       totalPages: number
     }
+    PagedModelEvolucaoResponse: {
+      content: components['schemas']['EvolucaoResponse'][]
+      page: components['schemas']['PageMetadata']
+    }
     PagedModelPacienteResumo: {
       content: components['schemas']['PacienteResumo'][]
       page: components['schemas']['PageMetadata']
+    }
+    ProcedimentoClinicoResponse: {
+      /** @enum {string|null} */
+      arcada: 'SUPERIOR' | 'INFERIOR' | null
+      /** Format: date-time */
+      criadoEm: string
+      /** Format: int32 */
+      dente: number | null
+      /** Format: uuid */
+      evolucaoId: string | null
+      faces: ('M' | 'D' | 'O_I' | 'V' | 'L_P')[]
+      /** Format: uuid */
+      id: string
+      local: string
+      motivo: string | null
+      observacao: string | null
+      procedimento: components['schemas']['ProcedimentoDoCatalogo']
+      /** Format: date */
+      realizadoEm: string | null
+      /** @enum {string} */
+      status: 'PLANEJADO' | 'REALIZADO' | 'CANCELADO' | 'ANULADO'
+    }
+    ProcedimentoDoCatalogo: {
+      /** @enum {string} */
+      abrangencia: 'BOCA' | 'ARCADA' | 'DENTE' | 'FACE'
+      /** Format: uuid */
+      id: string
+      nome: string
+    }
+    RegistroDeAtendimento: {
+      /** Format: date */
+      dataAtendimento: string
+      novosProcedimentos?: components['schemas']['DadosDoProcedimento'][] | null
+      procedimentosRealizados?: string[] | null
+      texto: string
     }
     UsuarioLogadoResponse: {
       email: string
@@ -237,6 +447,18 @@ export interface components {
       nome: string
       /** @enum {string} */
       papel: 'DENTISTA' | 'RECEPCAO'
+    }
+    VersaoDaEvolucao: {
+      alteradaPor: components['schemas']['Autor']
+      /** Format: date */
+      dataAtendimento: string
+      /** Format: date-time */
+      momento: string
+      /** Format: int64 */
+      revisao: number
+      texto: string
+      /** @enum {string} */
+      tipo: 'CRIACAO' | 'EDICAO' | 'ANULACAO'
     }
   }
   responses: never
@@ -340,7 +562,7 @@ export interface operations {
       }
     }
   }
-  buscar_1: {
+  buscar_2: {
     parameters: {
       query?: never
       header?: never
@@ -430,7 +652,7 @@ export interface operations {
       }
     }
   }
-  buscar: {
+  buscar_1: {
     parameters: {
       query?: never
       header?: never
@@ -476,6 +698,283 @@ export interface operations {
         }
         content: {
           '*/*': components['schemas']['AnamneseResponse']
+        }
+      }
+    }
+  }
+  listar_1: {
+    parameters: {
+      query?: {
+        pagina?: number
+        tamanho?: number
+      }
+      header?: never
+      path: {
+        pacienteId: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          '*/*': components['schemas']['PagedModelEvolucaoResponse']
+        }
+      }
+    }
+  }
+  registrar: {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        pacienteId: string
+      }
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['RegistroDeAtendimento']
+      }
+    }
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          '*/*': components['schemas']['EvolucaoResponse']
+        }
+      }
+    }
+  }
+  buscar: {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        pacienteId: string
+        id: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          '*/*': components['schemas']['EvolucaoResponse']
+        }
+      }
+    }
+  }
+  editar: {
+    parameters: {
+      query?: never
+      header?: {
+        'If-Match'?: string
+      }
+      path: {
+        pacienteId: string
+        id: string
+      }
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['EdicaoDeEvolucao']
+      }
+    }
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          '*/*': components['schemas']['EvolucaoResponse']
+        }
+      }
+    }
+  }
+  anular_1: {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        pacienteId: string
+        id: string
+      }
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['Justificativa']
+      }
+    }
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          '*/*': components['schemas']['EvolucaoResponse']
+        }
+      }
+    }
+  }
+  historico: {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        pacienteId: string
+        id: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          '*/*': components['schemas']['VersaoDaEvolucao'][]
+        }
+      }
+    }
+  }
+  listar: {
+    parameters: {
+      query?: {
+        status?: ('PLANEJADO' | 'REALIZADO' | 'CANCELADO' | 'ANULADO')[]
+      }
+      header?: never
+      path: {
+        pacienteId: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          '*/*': components['schemas']['ProcedimentoClinicoResponse'][]
+        }
+      }
+    }
+  }
+  planejar: {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        pacienteId: string
+      }
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['DadosDoProcedimento']
+      }
+    }
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          '*/*': components['schemas']['ProcedimentoClinicoResponse']
+        }
+      }
+    }
+  }
+  anular: {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        pacienteId: string
+        id: string
+      }
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['Justificativa']
+      }
+    }
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          '*/*': components['schemas']['ProcedimentoClinicoResponse']
+        }
+      }
+    }
+  }
+  cancelar: {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        pacienteId: string
+        id: string
+      }
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['Justificativa']
+      }
+    }
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          '*/*': components['schemas']['ProcedimentoClinicoResponse']
+        }
+      }
+    }
+  }
+  catalogo: {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          '*/*': components['schemas']['ProcedimentoDoCatalogo'][]
         }
       }
     }

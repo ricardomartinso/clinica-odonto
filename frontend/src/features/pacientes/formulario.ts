@@ -2,6 +2,7 @@ import { z } from 'zod'
 import type { DadosDoPaciente, PacienteResponse } from '@/api/tipos'
 import {
   cpfValido,
+  hojeIso,
   idadeEm,
   mascararCep,
   mascararCpf,
@@ -134,10 +135,4 @@ export function paraValores(p: PacienteResponse): ValoresPaciente {
     },
     observacoes: p.observacoes ?? '',
   }
-}
-
-function hojeIso(): string {
-  const hoje = new Date()
-  const doisDigitos = (n: number) => String(n).padStart(2, '0')
-  return `${hoje.getFullYear()}-${doisDigitos(hoje.getMonth() + 1)}-${doisDigitos(hoje.getDate())}`
 }
